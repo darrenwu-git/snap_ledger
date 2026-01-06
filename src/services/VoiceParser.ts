@@ -1,5 +1,3 @@
-
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import type { Category, TransactionType } from '../types';
 
 export interface ParsedTransaction {
@@ -16,36 +14,53 @@ export type VoiceIntent =
   | { type: 'uncategorized'; data: Partial<ParsedTransaction> & { originalText: string } }
   | { type: 'non_accounting'; message: string };
 
-// Helper to convert Blob to Base64
-const blobToBase64 = (blob: Blob): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64String = (reader.result as string).split(',')[1];
-      resolve(base64String);
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
-};
+const API_BASE_URL = '/api';
 
 export const parseVoiceInput = async (audioBlob: Blob, categories: Category[], apiKey: string): Promise<VoiceIntent> => {
   if (!apiKey || apiKey.trim() === '') {
     return {
       type: 'non_accounting',
-      message: "⚠️ Missing Gemini API Key. Please click the Gear icon to set it up."
+      message: "⚠️ Missing API Key. Please click the Gear icon to set up your AI Builder Space API Key."
     };
   }
 
   try {
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    // Step 1: Transcribe Audio
+    const formData = new FormData();
+    formData.append('audio_file', audioBlob, 'recording.webm');
+    // Optional: Add language hint if supported/needed, e.g., 'zh-TW'
+    // formData.append('language', 'zh-TW'); 
 
+    const transcriptResponse = await fetch(`${API_BASE_URL}/audio/transcriptions`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: formData
+    });
+
+    if (!transcriptResponse.ok) {
+      const errorText = await transcriptResponse.text();
+      console.error("Transcription API Error:", errorText);
+      throw new Error(`Transcription failed: ${transcriptResponse.statusText}`);
+    }
+
+    const transcriptData = await transcriptResponse.json();
+    const transcribedText = transcriptData.text;
+
+    console.log("Transcribed Text:", transcribedText);
+
+    if (!transcribedText || transcribedText.trim().length === 0) {
+      return { type: 'non_accounting', message: "I didn't hear anything clearly." };
+    }
+
+    // Step 2: Parse Transaction Logic (using Chat Completion)
     const categoryList = categories.map(c => `- ${c.name} (ID: ${c.id}, Type: ${c.type})`).join('\n');
     const today = new Date().toISOString().split('T')[0];
 
-    const prompt = `
-You are a smart financial assistant. Listen to the audio and extract the transaction details.
+    const systemPrompt = `
+You are a smart financial assistant. user has provided a transaction description.
+Analyze the text and extract the transaction details.
 
 Available Categories:
 ${categoryList}
@@ -53,7 +68,7 @@ ${categoryList}
 Current Date: ${today}
 
 Rules:
-1. AUDIO ANALYSIS: Listen to the user's speech.
+1. ANALYSIS: text is the user's spoken input.
 2. Identify if this is a transaction (expense/income) or purely non-accounting speech.
 3. If it is a transaction, extract:
    - Amount (number)
@@ -81,39 +96,58 @@ Return ONLY raw JSON:
 }
 `;
 
-    const base64Audio = await blobToBase64(audioBlob);
+    const chatResponse = await fetch(`${API_BASE_URL}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: "gemini-2.5-pro", // Or "supermind-agent-v1" / "deepseek"
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: transcribedText }
+        ],
+        temperature: 0.1
+      })
+    });
 
-    const result = await model.generateContent([
-      prompt,
-      {
-        inlineData: {
-          mimeType: audioBlob.type || 'audio/webm',
-          data: base64Audio
-        }
-      }
-    ]);
+    if (!chatResponse.ok) {
+        const errorText = await chatResponse.text();
+        console.error("Chat API Error:", errorText);
+        throw new Error(`Parsing failed: ${chatResponse.statusText}`);
+    }
 
-    const responseText = result.response.text();
-    console.log("Gemini Raw Response:", responseText);
+    const chatData = await chatResponse.json();
+    const content = chatData.choices[0]?.message?.content;
+
+    if (!content) {
+      throw new Error("Empty response from AI");
+    }
+
+    console.log("AI Parse Response:", content);
 
     // Clean potential markdown code blocks
-    const jsonStr = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+    const jsonStr = content.replace(/```json/g, '').replace(/```/g, '').trim();
     const data = JSON.parse(jsonStr);
 
     if (!data.is_transaction) {
-      return { type: 'non_accounting', message: data.message || "I didn't catch a transaction in that." };
+      return { 
+        type: 'non_accounting', 
+        message: data.message || "I didn't catch a transaction in that.",
+        // originalText: transcribedText // Optional: could pass back original text
+      };
     }
 
     // Determine type based on data completeness
-    // If we have amount and date, it's at least a draft transaction
     if (typeof data.amount === 'number') {
       const confidence = data.confidence || (data.categoryId ? 0.9 : 0.5);
       return {
         type: 'transaction',
         data: {
           amount: data.amount,
-          categoryId: data.categoryId || '', // Emtpy string if unknown
-          type: data.type || 'expense', // Default to expense
+          categoryId: data.categoryId || '',
+          type: data.type || 'expense',
           date: data.date || today,
           note: data.note || '',
           confidence: confidence
@@ -124,10 +158,10 @@ Return ONLY raw JSON:
     }
 
   } catch (error) {
-    console.error("Gemini Parse Error:", error);
+    console.error("Voice Processing Error:", error);
     return {
       type: 'non_accounting',
-      message: "❌ AI processing failed. Please check your API Key or try again."
+      message: "❌ AI processing failed. Please check your API Key."
     };
   }
 };

@@ -9,10 +9,10 @@ import type { Transaction } from '../types';
 
 const Dashboard: React.FC = () => {
   const { transactions, categories, getCategory, addTransaction } = useLedger(); // Need addTransaction here
-  const { apiKey, setApiKey } = useSettings();
+  const { apiKey } = useSettings();
   const [isAdding, setIsAdding] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [showApiKey, setShowApiKey] = useState(false);
+
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [voiceDraft, setVoiceDraft] = useState<Partial<Transaction> | undefined>(undefined);
   const [isProcessingVoice, setIsProcessingVoice] = useState(false);
@@ -246,38 +246,8 @@ const Dashboard: React.FC = () => {
         }}>
           <div className="glass-panel" style={{ padding: '24px', width: '90%', maxWidth: '400px' }}>
             <h3 style={{ marginBottom: '16px' }}>Settings</h3>
-            <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>Gemini API Key</label>
-            <div style={{ position: 'relative', marginBottom: '16px' }}>
-              <input
-                type={showApiKey ? "text" : "password"}
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                placeholder="AIza..."
-                className="input-field"
-                style={{ width: '100%', paddingRight: '40px' }}
-              />
-              <button
-                onClick={() => setShowApiKey(!showApiKey)}
-                style={{
-                  position: 'absolute',
-                  right: '12px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--color-text-muted)',
-                  cursor: 'pointer',
-                  fontSize: '1.2rem',
-                  padding: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-                title={showApiKey ? "Hide API Key" : "Show API Key"}
-              >
-                {showApiKey ? '🙈' : '👁️'}
-              </button>
-            </div>
+            {/* Settings content will go here */}
+            
             <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
               <button
                 onClick={() => setIsSettingsOpen(false)}

@@ -81,8 +81,8 @@ const VoiceInput: React.FC<VoiceInputProps> = ({ onResult, isProcessing }) => {
           width: '48px',
           height: '48px',
           borderRadius: '50%',
-          background: isListening ? 'hsl(var(--color-expense))' : 'hsl(var(--color-surface))',
-          color: isListening ? 'white' : 'hsl(var(--color-text-main))',
+          background: isListening ? 'hsl(var(--color-expense))' : (isProcessing ? 'hsl(var(--color-primary))' : 'hsl(var(--color-surface))'),
+          color: (isListening || isProcessing) ? 'white' : 'hsl(var(--color-text-main))',
           border: '1px solid hsl(var(--color-border))',
           boxShadow: 'var(--shadow-sm)',
           display: 'flex',
@@ -96,7 +96,7 @@ const VoiceInput: React.FC<VoiceInputProps> = ({ onResult, isProcessing }) => {
         title="Voice Input"
       >
         {isProcessing ? (
-          <div className="spinner" style={{ width: '20px', height: '20px', border: '2px solid white', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+          <div className="spinner" style={{ width: '20px', height: '20px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: 'white', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
         ) : (
           <span>🎤</span>
         )}

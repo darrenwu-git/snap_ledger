@@ -1,22 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLedger } from '../context/LedgerContext';
 import { useSettings } from '../context/SettingsContext';
 import MonthlySummary from './MonthlySummary';
 import TransactionForm from './TransactionForm';
 import VoiceInput from './VoiceInput';
 import { parseVoiceInput } from '../services/VoiceParser';
+import { LoginButton } from './LoginButton';
 import type { Transaction } from '../types';
+
+
+
+
 
 const Dashboard: React.FC = () => {
   const { transactions, categories, getCategory, addTransaction } = useLedger(); // Need addTransaction here
   const { apiKey } = useSettings();
   const [isAdding, setIsAdding] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
 
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [voiceDraft, setVoiceDraft] = useState<Partial<Transaction> | undefined>(undefined);
   const [isProcessingVoice, setIsProcessingVoice] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'info' | 'error' | 'success' } | null>(null);
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => {
+        setToast(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
 
   // Group by date
   // Sort descending by date
@@ -45,7 +59,7 @@ const Dashboard: React.FC = () => {
             note: txData.note || '',
             status: 'completed'
           } as any);
-          setToast({ message: "✅ Saved!", type: 'success' });
+          setToast({ message: "Saved!", type: 'success' });
         } else {
           // Low confidence or missing info -> Open Edit Modal
           setIsAdding(true);
@@ -106,25 +120,9 @@ const Dashboard: React.FC = () => {
           <h1 className="text-gradient" style={{ fontSize: '1.75rem' }}>Snap Ledger</h1>
           <span style={{ color: 'hsl(var(--color-text-muted))', fontSize: '0.9rem' }}>Smart Accounting</span>
         </div>
-        <button
-          onClick={() => setIsSettingsOpen(true)}
-          style={{
-            width: '40px',
-            height: '40px',
-            borderRadius: '50%',
-            background: 'hsl(var(--color-surface))',
-            border: '1px solid hsl(var(--color-border))',
-            color: 'var(--color-text-main)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            fontSize: '1.2rem'
-          }}
-          title="Settings"
-        >
-          ⚙️
-        </button>
+        <div className="flex items-center gap-3">
+          <LoginButton />
+        </div>
       </header>
 
       <MonthlySummary />
@@ -207,66 +205,44 @@ const Dashboard: React.FC = () => {
         )}
       </div>
 
-      {/* Floating Action Button */}
-      <div style={{ position: 'fixed', bottom: '32px', right: '32px', zIndex: 50 }}>
-        <VoiceInput onResult={handleVoiceResult} isProcessing={isProcessingVoice} />
+      {/* Floating Action Buttons */}
+      <div style={{ position: 'fixed', bottom: '32px', left: '0', right: '0', display: 'flex', justifyContent: 'center', pointerEvents: 'none', zIndex: 50 }}>
+        {/* Main Voice Button (Centered) */}
+        <div style={{ pointerEvents: 'auto', transform: 'scale(1.1)' }}>
+          <VoiceInput onResult={handleVoiceResult} isProcessing={isProcessingVoice} />
+        </div>
+
+        {/* Secondary Manual Add (Right) */}
+        <button
+          onClick={() => {
+            setEditingTransaction(null);
+            setVoiceDraft(undefined);
+            setIsAdding(true);
+          }}
+          className="btn-secondary"
+          style={{
+            pointerEvents: 'auto',
+            position: 'absolute',
+            right: '24px',
+            bottom: '8px',
+            width: '48px',
+            height: '48px',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '1.5rem',
+            background: 'hsl(var(--color-surface))',
+            border: '1px solid hsl(var(--color-border))',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+            padding: 0
+          }}
+        >
+          +
+        </button>
       </div>
 
-      <button
-        onClick={() => {
-          setEditingTransaction(null);
-          setVoiceDraft(undefined);
-          setIsAdding(true);
-        }}
-        className="btn-primary"
-        style={{
-          position: 'fixed',
-          bottom: '24px',
-          right: '50%', // Center it properly with transform
-          transform: 'translateX(50%)', // Centered properly
-          width: '56px',
-          height: '56px',
-          borderRadius: '50%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: '1.5rem',
-          boxShadow: 'var(--shadow-glow)',
-          padding: 0
-        }}
-      >
-        +
-      </button>
 
-      {/* Settings Modal */}
-      {isSettingsOpen && (
-        <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 300,
-          display: 'flex', alignItems: 'center', justifyContent: 'center'
-        }}>
-          <div className="glass-panel" style={{ padding: '24px', width: '90%', maxWidth: '400px' }}>
-            <h3 style={{ marginBottom: '16px' }}>Settings</h3>
-            {/* Settings content will go here */}
-            
-            <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
-              <button
-                onClick={() => setIsSettingsOpen(false)}
-                className="btn-secondary"
-                style={{ flex: 1 }}
-              >
-                Close
-              </button>
-              <button
-                onClick={() => setIsSettingsOpen(false)}
-                className="btn-primary"
-                style={{ flex: 1, margin: 0, width: 'auto' }}
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Toast Notification */}
       {toast && (
@@ -274,7 +250,7 @@ const Dashboard: React.FC = () => {
           className="animate-fade-in"
           style={{
             position: 'fixed',
-            top: '80px',
+            bottom: '120px',
             left: '50%',
             transform: 'translateX(-50%)',
             background: 'hsl(var(--color-surface))',

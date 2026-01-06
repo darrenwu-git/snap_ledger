@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 
 interface VoiceInputProps {
   onResult: (audioBlob: Blob) => void;
@@ -78,8 +79,8 @@ const VoiceInput: React.FC<VoiceInputProps> = ({ onResult, isProcessing }) => {
       <button
         onClick={toggleListening}
         style={{
-          width: '48px',
-          height: '48px',
+          width: '72px',
+          height: '72px',
           borderRadius: '50%',
           background: isListening ? 'hsl(var(--color-expense))' : (isProcessing ? 'hsl(var(--color-primary))' : 'hsl(var(--color-surface))'),
           color: (isListening || isProcessing) ? 'white' : 'hsl(var(--color-text-main))',
@@ -98,7 +99,16 @@ const VoiceInput: React.FC<VoiceInputProps> = ({ onResult, isProcessing }) => {
         {isProcessing ? (
           <div className="spinner" style={{ width: '20px', height: '20px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: 'white', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
         ) : (
-          <span>🎤</span>
+          <img 
+            src="/voice_ledger_icon_v3.png" 
+            alt="Voice Input" 
+            style={{ 
+              width: '100%', 
+              height: '100%', 
+              objectFit: 'cover',
+              borderRadius: '50%' 
+            }} 
+          />
         )}
 
         {isListening && (
@@ -115,23 +125,23 @@ const VoiceInput: React.FC<VoiceInputProps> = ({ onResult, isProcessing }) => {
         )}
       </button>
 
-      {/* Active Overlay for better UX when listening */}
-      {isListening && (
+      {isListening && createPortal(
         <div style={{
           position: 'fixed',
           inset: 0,
           background: 'rgba(0,0,0,0.4)',
-          zIndex: 90, // Below the button but above content
+          zIndex: 9999, // High z-index to cover everything
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          backdropFilter: 'blur(2px)'
+          backdropFilter: 'blur(2px)',
+          cursor: 'pointer'
         }} onClick={toggleListening}>
           <div className="glass-panel" style={{ padding: '24px', textAlign: 'center' }}>
-            <p style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: '8px' }}>Listening...</p>
-            <p style={{ color: 'hsl(var(--color-text-muted))' }}>Speak naturally...</p>
+            <p style={{ fontSize: '1.2rem', fontWeight: 600, color: 'hsl(var(--color-text-main))' }}>Say your expense...</p>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {error && (

@@ -202,27 +202,27 @@ const Dashboard: React.FC = () => {
             No transactions found for this period.
           </div>
         ) : (
-            <div className="flex-col" style={{ gap: '20px' }}>
-              {Object.keys(groupedTransactions).map(dateKey => {
-                const dateObj = new Date(dateKey); // Assuming dateKey is YYYY-MM-DD
-                // Fix: Adding timezone offset hack or just create using parts to avoid UTC shift if input is YYYY-MM-DD
-                // actually default Date(YYYY-MM-DD) is UTC, displayed in local time might shift.
-                // Safer: Parsing manually or just displaying string if strict.
-                // existing code used new Date(t.date) so let's stick to it, but be careful.
-                // let's use a nice formatter.
-                const dayLabel = dateObj.toLocaleDateString('default', { weekday: 'short', month: 'short', day: 'numeric' });
+          <div className="flex-col" style={{ gap: '20px' }}>
+            {Object.keys(groupedTransactions).map(dateKey => {
+              const dateObj = new Date(dateKey); // Assuming dateKey is YYYY-MM-DD
+              // Fix: Adding timezone offset hack or just create using parts to avoid UTC shift if input is YYYY-MM-DD
+              // actually default Date(YYYY-MM-DD) is UTC, displayed in local time might shift.
+              // Safer: Parsing manually or just displaying string if strict.
+              // existing code used new Date(t.date) so let's stick to it, but be careful.
+              // let's use a nice formatter.
+              const dayLabel = dateObj.toLocaleDateString('default', { weekday: 'short', month: 'short', day: 'numeric' });
 
-                return (
-                  <div key={dateKey}>
-                    <h4 style={{
-                      fontSize: '0.85rem',
-                      color: 'hsl(var(--color-text-muted))',
-                      marginBottom: '8px',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px'
-                    }}>
-                      {dayLabel}
-                    </h4>
+              return (
+                <div key={dateKey}>
+                  <h4 style={{
+                    fontSize: '0.85rem',
+                    color: 'hsl(var(--color-text-muted))',
+                    marginBottom: '8px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px'
+                  }}>
+                    {dayLabel}
+                  </h4>
                   <div className="flex-col" style={{ gap: '12px' }}>
                     {groupedTransactions[dateKey].map(tx => {
                       const category = getCategory(tx.categoryId);
@@ -276,24 +276,29 @@ const Dashboard: React.FC = () => {
             setVoiceDraft(undefined);
             setIsAdding(true);
           }}
-          className="btn-secondary"
+          className="btn-primary" // Use primary class for consistent hover
+          title="Manual Add"
           style={{
             pointerEvents: 'auto',
             position: 'absolute',
             right: '24px',
             bottom: '8px',
-            width: '48px',
-            height: '48px',
+            width: '56px',
+            height: '56px',
             borderRadius: '50%',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '1.5rem',
-            background: 'hsl(var(--color-surface))',
-            border: '1px solid hsl(var(--color-border))',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-            padding: 0
+            fontSize: '1.75rem',
+            background: 'hsl(var(--color-primary))',
+            color: 'white',
+            border: 'none',
+            boxShadow: 'var(--shadow-md)',
+            padding: 0,
+            transition: 'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
           }}
+          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
         >
           +
         </button>

@@ -1,6 +1,13 @@
 import React, { useState } from 'react';
 import { useLedger } from '../context/LedgerContext';
+import { DEFAULT_CATEGORIES } from '../types';
 import type { Transaction, TransactionType } from '../types';
+
+const PRESET_ICONS = [
+  '🍔', '🚗', '🛍️', '🎮', '🧾', '💊', '💰', '🎁', '📈',
+  '🏠', '📱', '💻', '👗', '✈️', '🛒', '🏋️', '📚', '👶',
+  '🐾', '🔧', '🚌', '🚕', '☕', '🍺', '💇', '🎨'
+];
 
 interface TransactionFormProps {
   onClose: () => void;
@@ -9,7 +16,7 @@ interface TransactionFormProps {
 }
 
 const TransactionForm: React.FC<TransactionFormProps> = ({ onClose, initialData, defaultValues }) => {
-  const { addTransaction, updateTransaction, deleteTransaction, categories } = useLedger();
+  const { addTransaction, updateTransaction, deleteTransaction, categories, addCategory, deleteCategory } = useLedger();
   const [type, setType] = useState<TransactionType>(initialData?.type || defaultValues?.type || 'expense');
   const [amount, setAmount] = useState(initialData?.amount?.toString() || defaultValues?.amount?.toString() || '');
   const [categoryId, setCategoryId] = useState(initialData?.categoryId || defaultValues?.categoryId || '');
@@ -17,6 +24,11 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onClose, initialData,
   const [date, setDate] = useState(initialData?.date || defaultValues?.date || new Date().toISOString().split('T')[0]);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Custom Category State
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [newCatName, setNewCatName] = useState('');
+  const [newCatIcon, setNewCatIcon] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,6 +76,45 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onClose, initialData,
       }
     }
   };
+
+
+
+  const handleAddCategory = async () => {
+    if (!newCatName || !newCatIcon) {
+      setError('Please select an icon and enter a name.');
+      return;
+    }
+
+    try {
+      const newId = await addCategory({
+        name: newCatName,
+        icon: newCatIcon,
+        type: type
+      });
+      setIsAddingCategory(false);
+      setNewCatName('');
+      setNewCatIcon('');
+      setCategoryId(newId);
+      setError(null);
+    } catch (e: any) {
+      setError(e.message || 'Failed to add category');
+    }
+  };
+
+  const handleDeleteCategory = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation(); // Prevent selecting the category when deleting
+    if (!window.confirm('Delete this category?')) return;
+
+    try {
+      await deleteCategory(id);
+      if (categoryId === id) setCategoryId('');
+    } catch (e: any) {
+      console.error(e);
+      setError('Failed to delete category');
+    }
+  };
+
+  const isCustomCategory = (id: string) => !DEFAULT_CATEGORIES.some(c => c.id === id);
 
   const filteredCategories = categories.filter((c) => c.type === type);
 
@@ -122,28 +173,150 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onClose, initialData,
 
         {/* Category Grid */}
         <div>
-          <label style={{ color: 'hsl(var(--color-text-muted))', fontSize: '0.9rem', marginBottom: '8px', display: 'block' }}>Category</label>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
-            {filteredCategories.map((cat) => (
-              <button
-                key={cat.id}
-                type="button"
-                onClick={() => setCategoryId(cat.id)}
-                className="flex-col flex-center"
-                style={{
-                  padding: '12px',
-                  borderRadius: 'var(--radius-md)',
-                  background: categoryId === cat.id ? 'hsl(var(--color-primary-glow))' : 'hsl(var(--color-surface))',
-                  border: categoryId === cat.id ? '1px solid hsl(var(--color-primary))' : '1px solid transparent',
-                  transition: 'all 0.2s',
-                  gap: '8px'
-                }}
-              >
-                <div style={{ fontSize: '1.5rem' }}>{cat.icon}</div>
-                <div style={{ fontSize: '0.75rem', color: categoryId === cat.id ? 'white' : 'hsl(var(--color-text-muted))' }}>{cat.name}</div>
-              </button>
-            ))}
+          <div className="flex-between" style={{ marginBottom: '8px' }}>
+            <label style={{ color: 'hsl(var(--color-text-muted))', fontSize: '0.9rem' }}>Category</label>
+            {isAddingCategory && (
+              <button type="button" onClick={() => setIsAddingCategory(false)} style={{ fontSize: '0.8rem', color: 'hsl(var(--color-text-muted))' }}>Cancel</button>
+            )}
           </div>
+
+          {isAddingCategory ? (
+            <div className="glass-panel" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {/* Icon Picker */}
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'hsl(var(--color-text-muted))', marginBottom: '8px', display: 'block' }}>Select Icon</label>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(6, 1fr)',
+                  gap: '8px',
+                  maxHeight: '120px',
+                  overflowY: 'auto',
+                  padding: '4px'
+                }}>
+                  {PRESET_ICONS.map(icon => (
+                    <button
+                      key={icon}
+                      type="button"
+                      onClick={() => setNewCatIcon(icon)}
+                      style={{
+                        fontSize: '1.5rem',
+                        padding: '8px',
+                        borderRadius: '8px',
+                        background: newCatIcon === icon ? 'hsl(var(--color-primary-glow))' : 'hsl(var(--color-surface))',
+                        border: newCatIcon === icon ? '1px solid hsl(var(--color-primary))' : '1px solid transparent',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {icon}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Name Input */}
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'hsl(var(--color-text-muted))', marginBottom: '8px', display: 'block' }}>Category Name</label>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <div style={{
+                    fontSize: '2rem',
+                    background: 'hsl(var(--color-bg))',
+                    borderRadius: '8px',
+                    width: '48px',
+                    height: '48px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    {newCatIcon || '?'}
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="e.g. Rent"
+                    value={newCatName}
+                    onChange={e => setNewCatName(e.target.value)}
+                    className="input-field"
+                    style={{ flex: 1 }}
+                  />
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleAddCategory}
+                className="btn-primary"
+                style={{ width: '100%' }}
+              >
+                Add Category
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
+              {filteredCategories.map((cat) => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => setCategoryId(cat.id)}
+                  className="flex-col flex-center"
+                  style={{
+                    position: 'relative',
+                    padding: '12px',
+                    borderRadius: 'var(--radius-md)',
+                    background: categoryId === cat.id ? 'hsl(var(--color-primary-glow))' : 'hsl(var(--color-surface))',
+                    border: categoryId === cat.id ? '1px solid hsl(var(--color-primary))' : '1px solid transparent',
+                    transition: 'all 0.2s',
+                    gap: '8px'
+                  }}
+                >
+                  {isCustomCategory(cat.id) && (
+                    <div
+                      onClick={(e) => handleDeleteCategory(e, cat.id)}
+                      style={{
+                        position: 'absolute',
+                        top: '-6px',
+                        right: '-6px',
+                        background: 'hsl(var(--color-expense))',
+                        color: 'white',
+                        borderRadius: '50%',
+                        width: '20px',
+                        height: '20px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '12px',
+                        fontWeight: 'bold',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                        zIndex: 10
+                      }}
+                    >
+                      ×
+                    </div>
+                  )}
+                  <div style={{ fontSize: '1.5rem' }}>{cat.icon}</div>
+                  <div style={{ fontSize: '0.75rem', color: categoryId === cat.id ? 'white' : 'hsl(var(--color-text-muted))', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>{cat.name}</div>
+                </button>
+              ))}
+
+                {/* Add New Category Button */}
+                <button
+                  type="button"
+                  onClick={() => setIsAddingCategory(true)}
+                  className="flex-col flex-center"
+                  style={{
+                    padding: '12px',
+                    borderRadius: 'var(--radius-md)',
+                    background: 'hsl(var(--color-surface))',
+                    border: '2px dashed hsl(var(--color-text-muted))',
+                    opacity: 0.6,
+                    transition: 'all 0.2s',
+                    gap: '8px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <div style={{ fontSize: '1.5rem' }}>➕</div>
+                  <div style={{ fontSize: '0.75rem', color: 'hsl(var(--color-text-muted))' }}>New</div>
+                </button>
+              </div>
+          )}
         </div>
 
         {/* Date & Note */}

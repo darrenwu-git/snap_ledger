@@ -10,6 +10,8 @@ interface LedgerContextType {
   addTransaction: (transaction: Omit<Transaction, 'id'>) => Promise<void>;
   updateTransaction: (id: string, transaction: Omit<Transaction, 'id'>) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
+  addCategory: (category: Omit<Category, 'id'>) => Promise<string>;
+  deleteCategory: (id: string) => Promise<void>;
   getCategory: (id: string) => Category | undefined;
 }
 
@@ -29,32 +31,52 @@ const mapFromDb = (row: any): Transaction => ({
 export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [categories] = useState<Category[]>(DEFAULT_CATEGORIES);
+  const [customCategories, setCustomCategories] = useState<Category[]>([]);
+
+  const categories = [...DEFAULT_CATEGORIES, ...customCategories];
 
   // FETCH Transactions
+  // FETCH Data
   useEffect(() => {
     if (user) {
       // Cloud Mode
-      const fetchTransactions = async () => {
-        const { data, error } = await supabase
+      const fetchData = async () => {
+        // Fetch Transactions
+        const { data: transData, error: transError } = await supabase
           .from('transactions')
           .select('*')
           .order('date', { ascending: false });
         
-        if (error) {
-          console.error('Error fetching transactions:', error);
-        } else if (data) {
-          setTransactions(data.map(mapFromDb));
+        if (transError) {
+          console.error('Error fetching transactions:', transError);
+        } else if (transData) {
+          setTransactions(transData.map(mapFromDb));
+        }
+
+        // Fetch Categories
+        const { data: catData, error: catError } = await supabase
+          .from('categories')
+          .select('*');
+
+        if (catError) {
+          console.warn('Error fetching categories (table might not exist yet):', catError);
+        } else if (catData) {
+          setCustomCategories(catData.map((c: any) => ({
+            id: c.id,
+            name: c.name,
+            icon: c.icon,
+            type: c.type
+          })));
         }
       };
       
-      fetchTransactions();
+      fetchData();
     } else {
       // Local Mode
-      const saved = localStorage.getItem('snap_ledger_transactions');
-      if (saved) {
+      const savedTrans = localStorage.getItem('snap_ledger_transactions');
+      if (savedTrans) {
         try {
-          const parsed = JSON.parse(saved);
+          const parsed = JSON.parse(savedTrans);
           const migrated = parsed.map((t: any) => ({
             ...t,
             status: t.status || 'completed'
@@ -66,6 +88,18 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         }
       } else {
           setTransactions([]);
+      }
+
+      const savedCats = localStorage.getItem('snap_ledger_categories');
+      if (savedCats) {
+        try {
+          setCustomCategories(JSON.parse(savedCats));
+        } catch (e) {
+          console.error("Failed to parse categories", e);
+          setCustomCategories([]);
+        }
+      } else {
+        setCustomCategories([]);
       }
     }
   }, [user]); // Re-run when user changes
@@ -165,12 +199,62 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   };
 
+  // ADD CATEGORY
+  const addCategory = async (category: Omit<Category, 'id'>): Promise<string> => {
+    const newCategory = {
+      ...category,
+      id: crypto.randomUUID() // Valid UUID for both local and Supabase (uuid type)
+    };
+
+    const prevCategories = [...customCategories];
+    setCustomCategories(prev => [...prev, newCategory]);
+
+    if (user) {
+      const { error } = await supabase.from('categories').insert({
+        id: newCategory.id,
+        user_id: user.id,
+        name: newCategory.name,
+        icon: newCategory.icon,
+        type: newCategory.type
+      });
+
+      if (error) {
+        console.error('Error adding category to Supabase:', error);
+        setCustomCategories(prevCategories);
+        throw new Error(error.message || 'Failed to save category');
+      }
+    } else {
+      const updated = [...customCategories, newCategory];
+      localStorage.setItem('snap_ledger_categories', JSON.stringify(updated));
+    }
+
+    return newCategory.id;
+  };
+
+  // DELETE CATEGORY
+  const deleteCategory = async (id: string) => {
+    const prevCategories = [...customCategories];
+    setCustomCategories(prev => prev.filter(c => c.id !== id));
+
+    if (user) {
+      const { error } = await supabase.from('categories').delete().eq('id', id);
+      if (error) {
+        console.error('Error deleting category:', error);
+        setCustomCategories(prevCategories);
+        throw new Error(error.message);
+      }
+    } else {
+      const updated = customCategories.filter(c => c.id !== id);
+      localStorage.setItem('snap_ledger_categories', JSON.stringify(updated));
+    }
+  };
+
   const getCategory = (id: string) => {
     return categories.find((c) => c.id === id);
   };
 
   return (
-    <LedgerContext.Provider value={{ transactions, categories, addTransaction, updateTransaction, deleteTransaction, getCategory }}>
+    <LedgerContext.Provider value={{ transactions, categories, addTransaction, updateTransaction, deleteTransaction, getCategory, addCategory, deleteCategory }}>
       {children}
     </LedgerContext.Provider>
   );

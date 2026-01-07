@@ -15,6 +15,13 @@ Create a simple way to track expenses, likely "snap" implies quick/easy entry (m
 
 ## 📅 Daily Updates
 
+### 2026-01-07
+- ✅ Fixed Critical Persistence Bug.
+  - Diagnosed schema mismatch (Frontend `categoryId`/`note` vs Backend `category`/`description`).
+  - Implemented bi-directional field mapping in `LedgerContext`.
+  - Added "Rollback" logic for Optimistic Updates to prevent "Ghost Data".
+  - Enhanced error handling in `Dashboard` and `TransactionForm` to notify users of sync failures.
+
 ### 2026-01-06
 - ✅ Completed Backend Persistence.
   - Configured Supabase Client & Context.

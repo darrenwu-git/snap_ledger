@@ -2,7 +2,7 @@ import React from 'react';
 import { useLedger } from '../context/LedgerContext';
 
 const MonthlySummary: React.FC = () => {
-  const { transactions } = useLedger();
+  const { transactions, categories } = useLedger();
 
   const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
   const monthTransactions = transactions.filter(t => t.date.startsWith(currentMonth));
@@ -27,7 +27,7 @@ const MonthlySummary: React.FC = () => {
 
   const categoryBreakdown = Object.entries(categoryTotals)
     .map(([id, total]) => {
-      const category = useLedger().categories.find(c => c.id === id);
+      const category = categories.find(c => c.id === id);
       return {
         ...category,
         total,

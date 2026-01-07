@@ -15,10 +15,15 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onClose, initialData,
   const [categoryId, setCategoryId] = useState(initialData?.categoryId || defaultValues?.categoryId || '');
   const [note, setNote] = useState(initialData?.note || defaultValues?.note || '');
   const [date, setDate] = useState(initialData?.date || defaultValues?.date || new Date().toISOString().split('T')[0]);
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!amount || !categoryId) return;
+
+    setError(null);
+    setIsSubmitting(true);
 
     const transactionData = {
       amount: parseFloat(amount),
@@ -29,18 +34,34 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onClose, initialData,
       status: 'completed' as const, // Explicitly set status to completed on save
     };
 
-    if (initialData) {
-      updateTransaction(initialData.id, transactionData);
-    } else {
-      addTransaction(transactionData);
+    try {
+      if (initialData) {
+        await updateTransaction(initialData.id, transactionData);
+      } else {
+        await addTransaction(transactionData);
+      }
+      onClose();
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Failed to save transaction');
+    } finally {
+      setIsSubmitting(false);
     }
-    onClose();
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (initialData) {
-      deleteTransaction(initialData.id);
-      onClose();
+      if (!window.confirm('Are you sure you want to delete this?')) return;
+
+      setError(null);
+      setIsSubmitting(true);
+      try {
+        await deleteTransaction(initialData.id);
+        onClose();
+      } catch (err: any) {
+        setError(err.message || 'Failed to delete');
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -56,6 +77,13 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onClose, initialData,
       </div>
 
       <form onSubmit={handleSubmit} className="flex-col" style={{ gap: '20px' }}>
+        {/* Error Message */}
+        {error && (
+          <div style={{ color: 'red', fontSize: '0.9rem', textAlign: 'center', background: 'rgba(255,0,0,0.1)', padding: '8px', borderRadius: '8px' }}>
+            {error}
+          </div>
+        )}
+
         {/* Type Toggle */}
         <div style={{ display: 'flex', background: 'hsl(var(--color-bg))', padding: '4px', borderRadius: 'var(--radius-full)' }}>
           {(['expense', 'income'] as const).map((t) => (
@@ -135,23 +163,26 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onClose, initialData,
           />
         </div>
 
-        <button type="submit" className="btn-primary" style={{ marginTop: '12px' }}>
-          {initialData ? 'Update Transaction' : 'Save Transaction'}
+        <button type="submit" className="btn-primary" style={{ marginTop: '12px', opacity: isSubmitting ? 0.7 : 1, cursor: isSubmitting ? 'not-allowed' : 'pointer' }} disabled={isSubmitting}>
+          {isSubmitting ? 'Saving...' : (initialData ? 'Update Transaction' : 'Save Transaction')}
         </button>
 
         {initialData && (
           <button
             type="button"
             onClick={handleDelete}
+            disabled={isSubmitting}
             style={{
               marginTop: '8px',
               padding: '12px',
               color: 'hsl(var(--color-expense))',
               fontWeight: 600,
-              width: '100%'
+              width: '100%',
+              opacity: isSubmitting ? 0.5 : 1,
+              cursor: isSubmitting ? 'not-allowed' : 'pointer' 
             }}
           >
-            Delete Transaction
+            {isSubmitting ? 'Processing...' : 'Delete Transaction'}
           </button>
         )}
       </form>

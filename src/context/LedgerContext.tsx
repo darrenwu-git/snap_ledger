@@ -15,6 +15,17 @@ interface LedgerContextType {
 
 const LedgerContext = createContext<LedgerContextType | undefined>(undefined);
 
+// Helper to map DB row to Transaction
+const mapFromDb = (row: any): Transaction => ({
+  id: row.id,
+  amount: Number(row.amount),
+  type: row.type || 'expense',
+  categoryId: row.category, // DB: category -> App: categoryId
+  date: row.date,
+  note: row.description,    // DB: description -> App: note
+  status: row.status || 'completed'
+});
+
 export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -33,7 +44,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         if (error) {
           console.error('Error fetching transactions:', error);
         } else if (data) {
-          setTransactions(data as Transaction[]);
+          setTransactions(data.map(mapFromDb));
         }
       };
       
@@ -68,16 +79,29 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
 
     // Optimistic Update
+    const previousTransactions = [...transactions];
     setTransactions(prev => [newTransaction as Transaction, ...prev]);
 
     if (user) {
-      const { error } = await supabase.from('transactions').insert({
-        ...newTransaction,
-        user_id: user.id
-      });
+      // Prepare DB payload
+      const payload = {
+        id: newTransaction.id,
+        user_id: user.id,
+        amount: newTransaction.amount,
+        type: newTransaction.type,
+        category: newTransaction.categoryId, // Map categoryId -> category
+        description: newTransaction.note,    // Map note -> description
+        date: newTransaction.date,
+        status: newTransaction.status
+      };
+
+      const { error } = await supabase.from('transactions').insert(payload);
+
       if (error) {
         console.error('Error adding transaction to Supabase:', error);
-        // Rollback? For now just log.
+        // Rollback
+        setTransactions(previousTransactions);
+        throw new Error(error.message || 'Failed to sync to cloud');
       }
     } else {
       // Local Save
@@ -89,16 +113,28 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // UPDATE
   const updateTransaction = async (id: string, updatedT: Omit<Transaction, 'id'>) => {
     // Optimistic Update
+    const previousTransactions = [...transactions];
     setTransactions((prev) => prev.map((t) => (t.id === id ? { ...updatedT, id } : t)));
 
     if (user) {
+      const payload = {
+        amount: updatedT.amount,
+        type: updatedT.type,
+        category: updatedT.categoryId, // Map categoryId -> category
+        description: updatedT.note,    // Map note -> description
+        date: updatedT.date,
+        status: updatedT.status
+      };
+
       const { error } = await supabase
         .from('transactions')
-        .update({ ...updatedT })
+        .update(payload)
         .eq('id', id);
       
       if (error) {
         console.error('Error updating transaction in Supabase:', error);
+        setTransactions(previousTransactions);
+        throw new Error(error.message || 'Failed to update in cloud');
       }
     } else {
       const updatedList = transactions.map((t) => (t.id === id ? { ...updatedT, id } : t));
@@ -109,6 +145,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // DELETE
   const deleteTransaction = async (id: string) => {
     // Optimistic Update
+    const previousTransactions = [...transactions];
     setTransactions((prev) => prev.filter((t) => t.id !== id));
 
     if (user) {
@@ -119,6 +156,8 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
       if (error) {
         console.error('Error deleting transaction from Supabase:', error);
+        setTransactions(previousTransactions);
+        throw new Error(error.message || 'Failed to delete from cloud');
       }
     } else {
       const updatedList = transactions.filter((t) => t.id !== id);

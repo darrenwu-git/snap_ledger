@@ -51,15 +51,19 @@ const Dashboard: React.FC = () => {
         const txData = result.data;
         // CONFIDENCE CHECK: If high confidence (>= 0.9) AND has category, AUTO-SAVE
         if ((txData.confidence || 0) >= 0.9 && txData.categoryId && txData.amount) {
-          addTransaction({
-            amount: txData.amount,
-            categoryId: txData.categoryId,
-            type: txData.type || 'expense',
-            date: txData.date || new Date().toISOString().split('T')[0],
-            note: txData.note || '',
-            status: 'completed'
-          } as any);
-          setToast({ message: "Saved!", type: 'success' });
+          try {
+            await addTransaction({
+              amount: txData.amount,
+              categoryId: txData.categoryId,
+              type: txData.type || 'expense',
+              date: txData.date || new Date().toISOString().split('T')[0],
+              note: txData.note || '',
+              status: 'completed'
+            } as any);
+            setToast({ message: "Saved!", type: 'success' });
+          } catch (e: any) {
+            setToast({ message: "Save failed: " + e.message, type: 'error' });
+          }
         } else {
           // Low confidence or missing info -> Open Edit Modal
           setIsAdding(true);
@@ -85,7 +89,7 @@ const Dashboard: React.FC = () => {
     setEditingTransaction(tx);
   };
 
-  const handleModalClose = () => {
+  const handleModalClose = async () => {
     // If we have a voice draft and user is closing WITHOUT saving (since save closes via form),
     // we should save as DRAFT.
     // NOTE: This handler is called when user clicks X or background.
@@ -95,15 +99,19 @@ const Dashboard: React.FC = () => {
       // User cancelled a voice draft -> Save as Draft
       // We need to ensure we have minimal fields.
       if (voiceDraft.amount) {
-        addTransaction({
-          amount: voiceDraft.amount,
-          categoryId: voiceDraft.categoryId || categories[0]?.id || 'unknown',
-          type: voiceDraft.type || 'expense',
-          date: voiceDraft.date || new Date().toISOString().split('T')[0],
-          note: voiceDraft.note || '(Draft)',
-          status: 'draft'
-        } as any);
-        setToast({ message: "Saved to Pending Review", type: 'info' });
+        try {
+          await addTransaction({
+            amount: voiceDraft.amount,
+            categoryId: voiceDraft.categoryId || categories[0]?.id || 'unknown',
+            type: voiceDraft.type || 'expense',
+            date: voiceDraft.date || new Date().toISOString().split('T')[0],
+            note: voiceDraft.note || '(Draft)',
+            status: 'draft'
+          } as any);
+          setToast({ message: "Saved to Pending Review", type: 'info' });
+        } catch (e: any) {
+          setToast({ message: "Failed to save draft: " + e.message, type: 'error' });
+        }
       }
     }
 

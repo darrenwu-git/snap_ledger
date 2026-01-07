@@ -23,6 +23,10 @@ const Dashboard: React.FC = () => {
   const [isProcessingVoice, setIsProcessingVoice] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'info' | 'error' | 'success' } | null>(null);
 
+  // View State
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [viewMode, setViewMode] = useState<'month' | 'year'>('month');
+
   useEffect(() => {
     if (toast) {
       const timer = setTimeout(() => {
@@ -32,12 +36,28 @@ const Dashboard: React.FC = () => {
     }
   }, [toast]);
 
-  // Group by date
-  // Sort descending by date
-  const sortedTransactions = [...transactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  // Filter and Group Transactions
+  const filteredTransactions = React.useMemo(() => {
+    return transactions.filter(t => {
+      const tDate = new Date(t.date);
+      const isSameYear = tDate.getFullYear() === currentDate.getFullYear();
+      if (viewMode === 'year') return isSameYear;
+      return isSameYear && tDate.getMonth() === currentDate.getMonth();
+    }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [transactions, currentDate, viewMode]);
 
-  const pendingTransactions = sortedTransactions.filter(t => t.status === 'draft');
-  const completedTransactions = sortedTransactions.filter(t => t.status !== 'draft');
+  const groupedTransactions = React.useMemo(() => {
+    const groups: Record<string, Transaction[]> = {};
+    filteredTransactions.forEach(t => {
+      if (t.status === 'draft') return; // Skip drafts here
+      const dateKey = t.date;
+      if (!groups[dateKey]) groups[dateKey] = [];
+      groups[dateKey].push(t);
+    });
+    return groups;
+  }, [filteredTransactions]);
+
+  const pendingTransactions = transactions.filter(t => t.status === 'draft'); // Show ALL drafts regardless of date? Or filter? Usually drafts are recent. Let's show all pending.
 
   // Voice Input Handler
   const handleVoiceResult = async (audioBlob: Blob) => {
@@ -133,7 +153,12 @@ const Dashboard: React.FC = () => {
         </div>
       </header>
 
-      <MonthlySummary />
+      <MonthlySummary
+        currentDate={currentDate}
+        setCurrentDate={setCurrentDate}
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+      />
 
       {/* Pending Reviews Section */}
       {pendingTransactions.length > 0 && (
@@ -169,43 +194,67 @@ const Dashboard: React.FC = () => {
 
       <div style={{ marginTop: '24px' }}>
         <div className="flex-between" style={{ marginBottom: '16px' }}>
-          <h3>Recent Transactions</h3>
-          <button style={{ color: 'hsl(var(--color-primary))', fontSize: '0.9rem' }}>View All</button>
+          <h3>{viewMode === 'year' ? `Transactions in ${currentDate.getFullYear()}` : 'Daily Transactions'}</h3>
         </div>
 
-        {completedTransactions.length === 0 ? (
+        {Object.keys(groupedTransactions).length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px 0', color: 'hsl(var(--color-text-muted))' }}>
-            No transactions yet. Start snapping!
+            No transactions found for this period.
           </div>
         ) : (
-          <div className="flex-col" style={{ gap: '12px' }}>
-            {completedTransactions.slice(0, 5).map(tx => {
-              const category = getCategory(tx.categoryId);
-              return (
-                <div key={tx.id}
-                  className="glass-panel"
-                  style={{
-                    padding: '16px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    cursor: 'pointer'
-                  }}
-                  onClick={() => handleTransactionClick(tx)}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <span style={{ fontSize: '1.5rem' }}>{category?.icon || '📝'}</span>
-                    <div className="flex-col">
-                      <span style={{ fontWeight: 500 }}>{category?.name || 'Uncategorized'}</span>
-                      <span style={{ fontSize: '0.8rem', color: 'hsl(var(--color-text-muted))' }}>{tx.note || tx.date}</span>
-                    </div>
+            <div className="flex-col" style={{ gap: '20px' }}>
+              {Object.keys(groupedTransactions).map(dateKey => {
+                const dateObj = new Date(dateKey); // Assuming dateKey is YYYY-MM-DD
+                // Fix: Adding timezone offset hack or just create using parts to avoid UTC shift if input is YYYY-MM-DD
+                // actually default Date(YYYY-MM-DD) is UTC, displayed in local time might shift.
+                // Safer: Parsing manually or just displaying string if strict.
+                // existing code used new Date(t.date) so let's stick to it, but be careful.
+                // let's use a nice formatter.
+                const dayLabel = dateObj.toLocaleDateString('default', { weekday: 'short', month: 'short', day: 'numeric' });
+
+                return (
+                  <div key={dateKey}>
+                    <h4 style={{
+                      fontSize: '0.85rem',
+                      color: 'hsl(var(--color-text-muted))',
+                      marginBottom: '8px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}>
+                      {dayLabel}
+                    </h4>
+                  <div className="flex-col" style={{ gap: '12px' }}>
+                    {groupedTransactions[dateKey].map(tx => {
+                      const category = getCategory(tx.categoryId);
+                      return (
+                        <div key={tx.id}
+                          className="glass-panel"
+                          style={{
+                            padding: '16px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            cursor: 'pointer'
+                          }}
+                          onClick={() => handleTransactionClick(tx)}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <span style={{ fontSize: '1.5rem' }}>{category?.icon || '📝'}</span>
+                            <div className="flex-col">
+                              <span style={{ fontWeight: 500 }}>{category?.name || 'Uncategorized'}</span>
+                              <span style={{ fontSize: '0.8rem', color: 'hsl(var(--color-text-muted))' }}>{tx.note || tx.date}</span>
+                            </div>
+                          </div>
+                          <span style={{
+                            color: tx.type === 'income' ? 'hsl(var(--color-income))' : 'hsl(var(--color-text-main))',
+                            fontWeight: 600
+                          }}>
+                            {tx.type === 'income' ? '+' : '-'}${tx.amount.toLocaleString()}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
-                  <span style={{
-                    color: tx.type === 'income' ? 'hsl(var(--color-income))' : 'hsl(var(--color-text-main))',
-                    fontWeight: 600
-                  }}>
-                    {tx.type === 'income' ? '+' : '-'}${tx.amount.toLocaleString()}
-                  </span>
                 </div>
               );
             })}

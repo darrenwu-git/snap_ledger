@@ -52,6 +52,9 @@ Create a simple way to track expenses, likely "snap" implies quick/easy entry (m
 - ✅ Disabled Auto-Category Creation for guest users (default off).
   - ✅ Implemented Distinct 'Sign Up' vs 'Log In' UI (Both use Google OAuth).
   - ✅ Removed non-functional "Cloud Sync Active" indicator from User Menu.
+- ✅ Implemented 'Today' Navigation.
+  - Added a dedicated "Today" button in the `MonthlySummary` header.
+  - Allows one-click return to the current date and month view.
 
 
 ### 2026-01-07

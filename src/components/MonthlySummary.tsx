@@ -127,6 +127,14 @@ const MonthlySummary: React.FC<MonthlySummaryProps> = ({
     }
   };
 
+  const handleToday = () => {
+    const today = new Date();
+    setCurrentDate(today);
+    if (viewMode === 'year') {
+      setViewMode('month');
+    }
+  };
+
   return (
     <div className="glass-panel" style={{ padding: '24px', marginBottom: '24px', position: 'relative' }}>
       {/* Controls Header */}
@@ -181,7 +189,7 @@ const MonthlySummary: React.FC<MonthlySummaryProps> = ({
               borderRadius: '8px',
               transition: 'background 0.2s'
             }}
-            onMouseEnter={e => e.currentTarget.style.background = 'hsla(var(--color-text-main), 0.1)'}
+            onMouseEnter={e => e.currentTarget.style.background = 'hsla(var(--color-text-main), 0.05)'}
             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
           >
             {dateDisplay}
@@ -350,6 +358,38 @@ const MonthlySummary: React.FC<MonthlySummaryProps> = ({
             </>
           )}
         </div>
+
+        {/* Today Button (Top Right) */}
+        <button
+          onClick={handleToday}
+          title="Go to Today"
+          style={{
+            padding: '6px 12px',
+            borderRadius: '20px',
+            border: '1px solid hsl(var(--color-border))',
+            background: 'transparent',
+            cursor: 'pointer',
+            color: 'hsl(var(--color-text-main))',
+            fontSize: '0.8rem',
+            fontWeight: 500,
+            transition: 'all 0.2s ease',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px'
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = 'hsl(var(--color-surface))';
+            e.currentTarget.style.borderColor = 'hsl(var(--color-primary))';
+            e.currentTarget.style.color = 'hsl(var(--color-primary))';
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.borderColor = 'hsl(var(--color-border))';
+            e.currentTarget.style.color = 'hsl(var(--color-text-main))';
+          }}
+        >
+          Today
+        </button>
       </div>
 
       {/* Chart Section with Centered Info */}

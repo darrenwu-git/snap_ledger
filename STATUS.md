@@ -24,6 +24,9 @@ Create a simple way to track expenses, likely "snap" implies quick/easy entry (m
   - Added pencil icon ✎ to custom categories in `TransactionForm`.
   - Added `updateCategory` to `LedgerContext` (handles local + supabase).
   - Allowed users to modify name and icon of custom categories.
+- ✅ Refined Visuals.
+  - Removed generic emoji from Monthly Summary chart.
+  - Increased Pie Chart size and moved Total Expense info to the center for a premium dashboard look.
 
 ### 2026-01-07
 - ✅ Fixed Critical Persistence Bug.

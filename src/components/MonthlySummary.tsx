@@ -144,31 +144,18 @@ const MonthlySummary: React.FC<MonthlySummaryProps> = ({
         </div>
       </div>
 
-      {/* Balance Big Display */}
-      <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-        <div style={{ fontSize: '0.8rem', color: 'hsl(var(--color-text-muted))', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>
-          Total Expense
-        </div>
-        <div style={{ fontSize: '2.5rem', fontWeight: 700, color: 'hsl(var(--color-text-main))' }}>
-          ${expense.toLocaleString()}
-        </div>
-        <div style={{ fontSize: '0.9rem', color: balance >= 0 ? 'hsl(var(--color-income))' : 'hsl(var(--color-expense))', marginTop: '4px', fontWeight: 500 }}>
-          Net: {balance >= 0 ? '+' : ''}${balance.toLocaleString()}
-        </div>
-      </div>
-
-      {/* Chart Section */}
+      {/* Chart Section with Centered Info */}
       {expense > 0 ? (
-        <div style={{ height: '220px', width: '100%', marginBottom: '24px', position: 'relative' }}>
+        <div style={{ height: '300px', width: '100%', marginBottom: '24px', position: 'relative' }}>
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
                 data={categoryData}
                 cx="50%"
                 cy="50%"
-                innerRadius={60}
-                outerRadius={80}
-                paddingAngle={5}
+                innerRadius={85}
+                outerRadius={110}
+                paddingAngle={4}
                 dataKey="value"
                 stroke="none"
               >
@@ -188,16 +175,30 @@ const MonthlySummary: React.FC<MonthlySummaryProps> = ({
               />
             </PieChart>
           </ResponsiveContainer>
-          {/* Center Text */}
+
+          {/* Center Info Overlay */}
           <div style={{
             position: 'absolute',
             top: '50%',
             left: '50%',
             transform: 'translate(-50%, -50%)',
             pointerEvents: 'none',
-            textAlign: 'center'
+            textAlign: 'center',
+            width: '160px', // Constrain width to fit in circle
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center'
           }}>
-            <span style={{ fontSize: '2rem' }}>📊</span>
+            <div style={{ fontSize: '0.75rem', color: 'hsl(var(--color-text-muted))', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>
+              Total Expense
+            </div>
+            <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'hsl(var(--color-text-main))', lineHeight: '1.2' }}>
+              ${expense.toLocaleString()}
+            </div>
+            <div style={{ fontSize: '0.85rem', color: balance >= 0 ? 'hsl(var(--color-income))' : 'hsl(var(--color-text-muted))', marginTop: '4px', fontWeight: 500 }}>
+              {balance >= 0 ? 'saved ' : 'over '}${Math.abs(balance).toLocaleString()}
+            </div>
           </div>
         </div>
       ) : (
@@ -205,6 +206,7 @@ const MonthlySummary: React.FC<MonthlySummaryProps> = ({
           No expenses for this period
           </div>
       )}
+
 
       {/* Breakdown List */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>

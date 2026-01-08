@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useLedger } from '../context/LedgerContext';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
@@ -98,8 +98,37 @@ const MonthlySummary: React.FC<MonthlySummaryProps> = ({
       }));
   }, [filteredTransactions, categories]);
 
+
+  // Date Picker State
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [pickerYear, setPickerYear] = useState(currentDate.getFullYear());
+
+  // Initialize picker year when opening
+  const handleOpenPicker = () => {
+    setPickerYear(currentDate.getFullYear());
+    setIsPickerOpen(true);
+  };
+
+  const handleYearChange = (delta: number) => {
+    setPickerYear(prev => prev + delta);
+  };
+
+  const handleMonthSelect = (monthIndex: number) => {
+    const newDate = new Date(currentDate);
+    newDate.setFullYear(pickerYear);
+    newDate.setMonth(monthIndex);
+    setCurrentDate(newDate);
+    setIsPickerOpen(false);
+    // If we picked a specific month, it makes sense to ensure we are in month view to see it,
+    // unless the user explicitly wants to stay in year view.
+    // But usually "jumping to a month" implies seeing that month.
+    if (viewMode === 'year') {
+      setViewMode('month');
+    }
+  };
+
   return (
-    <div className="glass-panel" style={{ padding: '24px', marginBottom: '24px' }}>
+    <div className="glass-panel" style={{ padding: '24px', marginBottom: '24px', position: 'relative' }}>
       {/* Controls Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'hsl(var(--color-bg))', borderRadius: 'var(--radius-full)', padding: '4px' }}>
@@ -137,10 +166,189 @@ const MonthlySummary: React.FC<MonthlySummaryProps> = ({
           </button>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', position: 'relative' }}>
           <button onClick={handlePrev} style={{ fontSize: '1.2rem', padding: '4px 8px', background: 'transparent', border: 'none', cursor: 'pointer', color: 'hsl(var(--color-text-main))' }}>‹</button>
-          <span style={{ fontWeight: 600, minWidth: '100px', textAlign: 'center' }}>{dateDisplay}</span>
+
+          <span
+            onClick={handleOpenPicker}
+            style={{
+              fontWeight: 600,
+              minWidth: '100px',
+              textAlign: 'center',
+              cursor: 'pointer',
+              userSelect: 'none',
+              padding: '4px 8px',
+              borderRadius: '8px',
+              transition: 'background 0.2s'
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = 'hsla(var(--color-text-main), 0.1)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+          >
+            {dateDisplay}
+          </span>
+
           <button onClick={handleNext} style={{ fontSize: '1.2rem', padding: '4px 8px', background: 'transparent', border: 'none', cursor: 'pointer', color: 'hsl(var(--color-text-main))' }}>›</button>
+
+          {/* Date Picker Popover */}
+          {isPickerOpen && (
+            <>
+              {/* Backdrop */}
+              <div
+                style={{
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  zIndex: 100
+                }}
+                onClick={() => setIsPickerOpen(false)}
+              />
+
+              {/* Popover */}
+              <div style={{
+                position: 'absolute',
+                top: '100%',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                marginTop: '8px',
+                background: 'hsl(var(--color-surface))',
+                border: '1px solid hsl(var(--color-border))',
+                borderRadius: '16px',
+                padding: '16px',
+                boxShadow: 'var(--shadow-lg)',
+                zIndex: 101,
+                minWidth: '280px',
+                animation: 'fade-in 0.2s ease-out'
+              }}>
+                {viewMode === 'month' ? (
+                  <>
+                    {/* Year Navigator (Month Mode) */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                      <button
+                        onClick={() => handleYearChange(-1)}
+                        style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'hsl(var(--color-text-main))', padding: '8px' }}
+                      >
+                        ‹
+                      </button>
+                      <span style={{ fontWeight: 700, fontSize: '1.1rem' }}>{pickerYear}</span>
+                      <button
+                        onClick={() => handleYearChange(1)}
+                        style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'hsl(var(--color-text-main))', padding: '8px' }}
+                      >
+                        ›
+                      </button>
+                    </div>
+
+                    {/* Months Grid */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                      {Array.from({ length: 12 }).map((_, i) => {
+                        const date = new Date(pickerYear, i, 1);
+                        const monthName = date.toLocaleString('default', { month: 'short' });
+                        const isSelected = i === currentDate.getMonth() && pickerYear === currentDate.getFullYear();
+                        const isCurrentMonth = new Date().getMonth() === i && new Date().getFullYear() === pickerYear;
+
+                        return (
+                          <button
+                            key={i}
+                            onClick={() => handleMonthSelect(i)}
+                            style={{
+                              padding: '8px 4px',
+                              borderRadius: '8px',
+                              border: 'none',
+                              background: isSelected ? 'hsl(var(--color-primary))' : 'transparent',
+                              color: isSelected ? 'white' : 'hsl(var(--color-text-main))',
+                              cursor: 'pointer',
+                              fontSize: '0.9rem',
+                              fontWeight: isSelected ? 600 : 400,
+                              outline: isCurrentMonth && !isSelected ? '1px solid hsl(var(--color-primary))' : 'none'
+                            }}
+                            onMouseEnter={e => {
+                              if (!isSelected) e.currentTarget.style.background = 'hsla(var(--color-text-main), 0.1)';
+                            }}
+                            onMouseLeave={e => {
+                              if (!isSelected) e.currentTarget.style.background = 'transparent';
+                            }}
+                          >
+                            {monthName}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* Year Range Navigator (Year Mode) */}
+                    {/* 12 Year Window: centered on pickerYear, e.g. start = pickerYear - 5 */}
+                    {(() => {
+                      const startYearDisplay = pickerYear - 5;
+                      const endYearDisplay = pickerYear + 6;
+
+                      return (
+                        <>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                            <button
+                              onClick={() => handleYearChange(-12)}
+                              style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'hsl(var(--color-text-main))', padding: '8px' }}
+                            >
+                              ‹
+                            </button>
+                            <span style={{ fontWeight: 700, fontSize: '1.1rem' }}>{startYearDisplay} - {endYearDisplay}</span>
+                            <button
+                              onClick={() => handleYearChange(12)}
+                              style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'hsl(var(--color-text-main))', padding: '8px' }}
+                            >
+                              ›
+                            </button>
+                          </div>
+
+                          {/* Years Grid */}
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                            {Array.from({ length: 12 }).map((_, i) => {
+                              const year = startYearDisplay + i;
+                              const isSelected = year === currentDate.getFullYear();
+                              const isCurrentYear = year === new Date().getFullYear();
+
+                              return (
+                                <button
+                                  key={year}
+                                  onClick={() => {
+                                    const newDate = new Date(currentDate);
+                                    newDate.setFullYear(year);
+                                    setCurrentDate(newDate);
+                                    setIsPickerOpen(false);
+                                  }}
+                                  style={{
+                                    padding: '8px 4px',
+                                    borderRadius: '8px',
+                                    border: 'none',
+                                    background: isSelected ? 'hsl(var(--color-primary))' : 'transparent',
+                                    color: isSelected ? 'white' : 'hsl(var(--color-text-main))',
+                                    cursor: 'pointer',
+                                    fontSize: '0.9rem',
+                                    fontWeight: isSelected ? 600 : 400,
+                                    outline: isCurrentYear && !isSelected ? '1px solid hsl(var(--color-primary))' : 'none'
+                                  }}
+                                  onMouseEnter={e => {
+                                    if (!isSelected) e.currentTarget.style.background = 'hsla(var(--color-text-main), 0.1)';
+                                  }}
+                                  onMouseLeave={e => {
+                                    if (!isSelected) e.currentTarget.style.background = 'transparent';
+                                  }}
+                                >
+                                  {year}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
 

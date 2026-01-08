@@ -33,6 +33,12 @@ Create a simple way to track expenses, likely "snap" implies quick/easy entry (m
 - ✅ Fixed UI Alignment Bug.
   - Centered User Avatar image within its container (concentric alignment).
   - Enforced circular container shape and prevented image distortion.
+- ✅ Implemented Date Picker Navigation.
+  - Added popover interface to `MonthlySummary` for quick Month/Year selection.
+  - Clickable date header opens the picker.
+  - Supports quick year jumping and direct month selection.
+  - **New**: Dedicated Year Grid when in Year View (allows direct year selection).
+
 
 ### 2026-01-07
 - ✅ Fixed Critical Persistence Bug.

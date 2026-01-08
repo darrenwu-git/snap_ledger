@@ -39,6 +39,10 @@ Create a simple way to track expenses, likely "snap" implies quick/easy entry (m
   - Clickable date header opens the picker.
   - Supports quick year jumping and direct month selection.
   - **New**: Dedicated Year Grid when in Year View (allows direct year selection).
+- ✅ Implemented Category Filtering.
+  - Tapping a category icon in the transaction list filters the view to that specific category.
+  - Added "Filtering by [Category]" indicator with a clear button.
+  - Streamlines bulk editing/reviewing of specific transaction types (e.g., Uncategorized).
 
 
 ### 2026-01-07

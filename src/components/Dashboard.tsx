@@ -23,6 +23,7 @@ const Dashboard: React.FC = () => {
   // View State
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'month' | 'year'>('month');
+  const [filterCategoryId, setFilterCategoryId] = useState<string | null>(null);
 
   useEffect(() => {
     if (toast) {
@@ -38,10 +39,16 @@ const Dashboard: React.FC = () => {
     return transactions.filter(t => {
       const tDate = new Date(t.date);
       const isSameYear = tDate.getFullYear() === currentDate.getFullYear();
-      if (viewMode === 'year') return isSameYear;
-      return isSameYear && tDate.getMonth() === currentDate.getMonth();
+      const matchesDate = viewMode === 'year'
+        ? isSameYear
+        : (isSameYear && tDate.getMonth() === currentDate.getMonth());
+
+      if (!matchesDate) return false;
+      if (filterCategoryId && t.categoryId !== filterCategoryId) return false;
+
+      return true;
     }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [transactions, currentDate, viewMode]);
+  }, [transactions, currentDate, viewMode, filterCategoryId]);
 
   const groupedTransactions = React.useMemo(() => {
     const groups: Record<string, Transaction[]> = {};
@@ -135,6 +142,11 @@ const Dashboard: React.FC = () => {
     setEditingTransaction(tx);
   };
 
+  const handleCategoryClick = (categoryId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setFilterCategoryId(prev => prev === categoryId ? null : categoryId);
+  };
+
   const handleModalClose = async () => {
     // If we have a voice draft and user is closing WITHOUT saving (since save closes via form),
     // we should save as DRAFT.
@@ -219,13 +231,37 @@ const Dashboard: React.FC = () => {
       )}
 
       <div style={{ marginTop: '24px' }}>
-        <div className="flex-between" style={{ marginBottom: '16px' }}>
+        <div className="flex-between" style={{ marginBottom: '16px', alignItems: 'center' }}>
           <h3>{viewMode === 'year' ? `Transactions in ${currentDate.getFullYear()}` : 'Recent Transactions'}</h3>
+
+          {filterCategoryId && (
+            <button
+              onClick={() => setFilterCategoryId(null)}
+              style={{
+                fontSize: '0.85rem',
+                color: 'hsl(var(--color-primary))',
+                background: 'var(--color-surface)',
+                padding: '6px 16px',
+                borderRadius: '20px',
+                border: '1px solid hsl(var(--color-primary))',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                cursor: 'pointer',
+                boxShadow: 'var(--shadow-sm)'
+              }}
+            >
+              <span>Filtering by {getCategory(filterCategoryId)?.name}</span>
+              <span style={{ fontWeight: 'bold' }}>✕</span>
+            </button>
+          )}
         </div>
 
         {Object.keys(groupedTransactions).length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px 0', color: 'hsl(var(--color-text-muted))' }}>
-            No transactions found for this period.
+            {filterCategoryId
+              ? `No ${getCategory(filterCategoryId)?.name || 'selected'} transactions found in this period.`
+              : 'No transactions found for this period.'}
           </div>
         ) : (
           <div className="flex-col" style={{ gap: '20px' }}>
@@ -252,6 +288,7 @@ const Dashboard: React.FC = () => {
                   <div className="flex-col" style={{ gap: '12px' }}>
                     {groupedTransactions[dateKey].map(tx => {
                       const category = getCategory(tx.categoryId);
+                      const isFiltered = filterCategoryId === tx.categoryId;
                       return (
                         <div key={tx.id}
                           className="glass-panel"
@@ -260,12 +297,30 @@ const Dashboard: React.FC = () => {
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'space-between',
-                            cursor: 'pointer'
+                            cursor: 'pointer',
+                            borderLeft: isFiltered ? '4px solid hsl(var(--color-primary))' : 'none'
                           }}
                           onClick={() => handleTransactionClick(tx)}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <span style={{ fontSize: '1.5rem' }}>{category?.icon || '📝'}</span>
+                            <div
+                              onClick={(e) => handleCategoryClick(tx.categoryId, e)}
+                              title="Filter by this category"
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                width: '40px',
+                                height: '40px',
+                                borderRadius: '50%',
+                                cursor: 'alias',
+                                transition: 'background 0.2s'
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.background = 'hsl(var(--color-surface-hover))'}
+                              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                            >
+                              <span style={{ fontSize: '1.5rem' }}>{category?.icon || '📝'}</span>
+                            </div>
                             <div className="flex-col">
                               <span style={{ fontWeight: 500 }}>{category?.name || 'Uncategorized'}</span>
                               <span style={{ fontSize: '0.8rem', color: 'hsl(var(--color-text-muted))' }}>{tx.note || tx.date}</span>

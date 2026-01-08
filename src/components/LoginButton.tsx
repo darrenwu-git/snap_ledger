@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
+import pkg from '../../package.json';
 
 interface LoginButtonProps {
   onOpenSettings?: () => void;
@@ -137,6 +138,19 @@ export const LoginButton: React.FC<LoginButtonProps> = ({ onOpenSettings }) => {
               </svg>
               Sign Out
             </button>
+            <div style={{
+              borderTop: '1px solid hsl(var(--color-border))',
+              marginTop: '4px',
+              paddingTop: '8px',
+              paddingBottom: '4px',
+              textAlign: 'center',
+              fontSize: '0.7rem',
+              color: 'hsl(var(--color-text-muted))',
+              letterSpacing: '0.05em',
+              opacity: 0.7
+            }}>
+              v{pkg.version}
+            </div>
           </div>
         )}
       </div>

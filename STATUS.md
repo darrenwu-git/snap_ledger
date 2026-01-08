@@ -27,6 +27,9 @@ Create a simple way to track expenses, likely "snap" implies quick/easy entry (m
 - ✅ Refined Visuals.
   - Removed generic emoji from Monthly Summary chart.
   - Increased Pie Chart size and moved Total Expense info to the center for a premium dashboard look.
+- ✅ Implemented Version Number Management.
+  - Set initial version to `v0.1.0`.
+  - Added "Version" display in the User Avatar dropdown.
 
 ### 2026-01-07
 - ✅ Fixed Critical Persistence Bug.

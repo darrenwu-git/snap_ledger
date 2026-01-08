@@ -31,21 +31,23 @@ export const LoginButton: React.FC<LoginButtonProps> = ({ onOpenSettings }) => {
       <div className="user-menu-container" style={{ position: 'relative' }}>
         <div 
           onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-2" 
+          className="flex-center" 
           style={{ 
             background: 'rgba(255, 255, 255, 0.2)', 
             backdropFilter: 'blur(8px)',
             padding: '4px',
             borderRadius: '50%',
             border: '1px solid rgba(255, 255, 255, 0.3)',
-            cursor: 'pointer'
+            cursor: 'pointer',
+            width: '42px',
+            height: '42px'
           }}
         >
           {user.user_metadata.avatar_url ? (
               <img 
                 src={user.user_metadata.avatar_url} 
                 alt="User" 
-                style={{ width: '32px', height: '32px', borderRadius: '50%' }}
+              style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }}
               />
           ) : (
               <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#4285F4', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

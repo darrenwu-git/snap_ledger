@@ -30,6 +30,9 @@ Create a simple way to track expenses, likely "snap" implies quick/easy entry (m
 - ✅ Implemented Version Number Management.
   - Set initial version to `v0.1.0`.
   - Added "Version" display in the User Avatar dropdown.
+- ✅ Fixed UI Alignment Bug.
+  - Centered User Avatar image within its container (concentric alignment).
+  - Enforced circular container shape and prevented image distortion.
 
 ### 2026-01-07
 - ✅ Fixed Critical Persistence Bug.

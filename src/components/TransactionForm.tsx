@@ -21,7 +21,10 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onClose, initialData,
   const [amount, setAmount] = useState(initialData?.amount?.toString() || defaultValues?.amount?.toString() || '');
   const [categoryId, setCategoryId] = useState(initialData?.categoryId || defaultValues?.categoryId || '');
   const [note, setNote] = useState(initialData?.note || defaultValues?.note || '');
-  const [date, setDate] = useState(initialData?.date || defaultValues?.date || new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(() => {
+    const val = initialData?.date || defaultValues?.date || new Date().toISOString();
+    return val.split('T')[0];
+  });
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 

@@ -43,6 +43,8 @@ Create a simple way to track expenses, likely "snap" implies quick/easy entry (m
   - Tapping a category icon in the transaction list filters the view to that specific category.
   - Added "Filtering by [Category]" indicator with a clear button.
   - Streamlines bulk editing/reviewing of specific transaction types (e.g., Uncategorized).
+- ✅ Fixed Bug: Edit Transaction date field alignment.
+  - Sanitized `TransactionForm` date initialization to remove timestamp components from ISO strings, ensuring compatibility with `input type="date"`.
 
 
 ### 2026-01-07

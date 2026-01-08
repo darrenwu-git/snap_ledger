@@ -220,7 +220,7 @@ const Dashboard: React.FC = () => {
 
       <div style={{ marginTop: '24px' }}>
         <div className="flex-between" style={{ marginBottom: '16px' }}>
-          <h3>{viewMode === 'year' ? `Transactions in ${currentDate.getFullYear()}` : 'Daily Transactions'}</h3>
+          <h3>{viewMode === 'year' ? `Transactions in ${currentDate.getFullYear()}` : 'Recent Transactions'}</h3>
         </div>
 
         {Object.keys(groupedTransactions).length === 0 ? (

@@ -16,6 +16,7 @@ Create a simple way to track expenses, likely "snap" implies quick/easy entry (m
 ## 📅 Daily Updates
 
 ### 2026-01-08
+- ✅ UI Improvement: Renamed "Daily Transactions" to "Recent Transactions" for better clarity.
 - ✅ Implemented "AI Auto-Create Category" feature.
   - Added "Settings" modal with toggle for auto-category creation.
   - Enhanced `VoiceParser` prompting to suggest new categories (name + icon) when enabled.

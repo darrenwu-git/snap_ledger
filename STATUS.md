@@ -55,6 +55,7 @@ Create a simple way to track expenses, likely "snap" implies quick/easy entry (m
 - ✅ Implemented 'Today' Navigation.
   - Added a dedicated "Today" button in the `MonthlySummary` header.
   - Allows one-click return to the current date and month view.
+- ✅ Security: Rotated API keys and removed env files from git tracking.
 
 
 ### 2026-01-07

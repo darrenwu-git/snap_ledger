@@ -51,6 +51,7 @@ Create a simple way to track expenses, likely "snap" implies quick/easy entry (m
 - ✅ Removed Settings Gear for guest users (simplified UI).
 - ✅ Disabled Auto-Category Creation for guest users (default off).
   - ✅ Implemented Distinct 'Sign Up' vs 'Log In' UI (Both use Google OAuth).
+  - ✅ Removed non-functional "Cloud Sync Active" indicator from User Menu.
 
 
 ### 2026-01-07

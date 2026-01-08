@@ -69,19 +69,7 @@ export const LoginButton: React.FC<LoginButtonProps> = ({ onOpenSettings }) => {
             zIndex: 100,
             minWidth: '180px'
           }}>
-            <div style={{
-              padding: '8px 12px',
-              borderBottom: '1px solid hsl(var(--color-border))',
-              marginBottom: '4px',
-              fontSize: '0.75rem',
-              color: 'hsl(var(--color-text-muted))',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}>
-              <span style={{ fontSize: '0.9rem' }}>☁️</span>
-              <span>Cloud Sync Active</span>
-            </div>
+
 
             {onOpenSettings && (
               <button

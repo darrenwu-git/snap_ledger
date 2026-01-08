@@ -1,73 +1,77 @@
-# React + TypeScript + Vite
+# Snap Ledger
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+![Version](https://img.shields.io/badge/version-v0.1.0-blue)
+![License](https://img.shields.io/badge/license-Private-red)
+![Status](https://img.shields.io/badge/status-active-success)
 
-Currently, two official plugins are available:
+Snap Ledger is a **premium, mobile-first expense tracking application** designed to reduce the friction of manual data entry. By leveraging AI-driven voice input and smart auto-categorization, it allows users to capture financial transactions in seconds.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+The application is built with a **Hybrid Persistence** architecture, ensuring users can track expenses seamlessly whether they are offline (Local Storage) or online (Supabase Cloud Sync).
 
-## React Compiler
+## 🚀 Key Features
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+*   **🎙️ AI Voice Input**: Speak your expenses naturally (e.g., "Spent 15 dollars on coffee"). The integrated Google Gemini AI parses the audio to extract the amount, category, and notes automatically.
+*   **🧠 Auto-Categorization**: The AI automatically suggests icons and categories for new types of expenses, learning from your input patterns.
+*   **💾 Hybrid Persistence**:
+    *   **Cloud Mode**: Syncs data securely with Supabase when logged in via Google OAuth.
+    *   **Guest Mode**: Fully functional offline mode using Local Storage for privacy-conscious or unauthenticated users.
+    *   **Optimistic UI**: Instant feedback on actions with background synchronization and rollback protection.
+*   **📊 Interactive Visualizations**:
+    *   Beautiful, centered donut charts powered by Recharts.
+    *   Dynamic time filtering (Recent Transactions vs. Monthly/Yearly Summaries).
+*   **🎨 Premium Mobile-First Design**:
+    *   Sleek Dark Mode aesthetics.
+    *   Glassmorphism effects and smooth micro-interactions.
+    *   Responsive layout optimized for touch devices.
 
-## Expanding the ESLint configuration
+## 🛠️ Technology Stack
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+*   **Frontend**: React, TypeScript, Vite
+*   **Styling**: Vanilla CSS (Variables, Flexbox/Grid) for a lightweight, custom design system.
+*   **AI Integration**: Google Gemini 2.5 Flash Model (via AI Builder Space API / Custom Integration).
+*   **Backend/Database**: Supabase (PostgreSQL) for cloud storage and real-time subscription.
+*   **Authentication**: Google OAuth (via Supabase Auth).
+*   **Icons**: Google Material Symbols.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## 📦 Installation & Setup
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+1.  **Clone the repository**:
+    ```bash
+    git clone https://github.com/darrenwu-git/snap_ledger.git
+    cd snap_ledger
+    ```
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+2.  **Install Dependencies**:
+    ```bash
+    npm install
+    ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+3.  **Environment Configuration**:
+    Create a `.env` file in the root directory (based on `.env.example` if available) and add your keys:
+    ```env
+    VITE_SUPABASE_URL=your_supabase_project_url
+    VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+    VITE_GOOGLE_CLIENT_ID=your_google_oauth_client_id
+    VITE_BUILDER_API_KEY=your_gemini_api_key
+    ```
+    *(Note: `.env` files are git-ignored for security)*
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+4.  **Run Development Server**:
+    ```bash
+    npm run dev
+    ```
+    Access the app at `http://localhost:5173` (or the port shown in your terminal).
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## 🛡️ Privacy & Security
+
+*   **Data Ownership**: In Guest Mode, all data resides solely on your device's browser.
+*   **Secure Cloud**: In Cloud Mode, data is protected by Supabase's Row Level Security (RLS) policies, customized to your Google User ID.
+*   **API Security**: Sensitive keys are kept out of source control.
+
+## 🤝 Contributing
+
+This is a private personal project. Concepts and patterns are based on the "Mind OS" agentic workflow documentation.
+
+## 📝 License
+
+Private / Proprietary.

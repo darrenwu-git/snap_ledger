@@ -9,6 +9,9 @@ interface LoginButtonProps {
 export const LoginButton: React.FC<LoginButtonProps> = ({ onOpenSettings }) => {
   const { user, signInWithGoogle, signOut } = useAuth();
   const [isOpen, setIsOpen] = React.useState(false);
+  const [showInviteInput, setShowInviteInput] = React.useState(false);
+  const [inviteCode, setInviteCode] = React.useState('');
+  const [error, setError] = React.useState(false);
 
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -25,6 +28,23 @@ export const LoginButton: React.FC<LoginButtonProps> = ({ onOpenSettings }) => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isOpen]);
+
+  const handleInviteSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Use environment variable for the code
+    const VALID_CODE = import.meta.env.VITE_INVITE_CODE || 'snap2026'; // Fallback if env not set
+
+    if (inviteCode.toLowerCase().trim() === VALID_CODE) {
+      signInWithGoogle();
+      setShowInviteInput(false);
+      setInviteCode('');
+      setError(false);
+    } else {
+      setError(true);
+      // Small shake effect or just set error state
+      setTimeout(() => setError(false), 2000);
+    }
+  };
 
   if (user) {
     return (
@@ -147,60 +167,113 @@ export const LoginButton: React.FC<LoginButtonProps> = ({ onOpenSettings }) => {
     );
   }
 
+
+
   return (
-    <div className="flex items-center gap-2">
-      {/* If not logged in, we might still want settings? 
-           For now, the user request specifically asked to move it to the avatar dropdown, which implies logged-in state.
-           However, if logged out, the avatar is replaced by "Sign In".
-           If we want settings to be available when logged out, we should keep a separate button or add a menu for guests.
-           Given "Cloud Sync Active" context, let's assume this is primarily for logged-in users or we can add a simple gear next to Sign In if needed. 
-           But the prompt says "put the gear icon inside the avatar dropdown". 
-           So let's stick to that.
-       */}
+    <div className="flex items-center gap-2" style={{ position: 'relative' }}>
+      {showInviteInput && (
+        <div style={{
+          position: 'absolute',
+          top: '120%',
+          right: 0,
+          background: 'hsl(var(--color-surface))',
+          border: '1px solid hsl(var(--color-border))',
+          padding: '12px',
+          borderRadius: '12px',
+          boxShadow: 'var(--shadow-lg)',
+          zIndex: 100,
+          minWidth: '220px',
+          animation: 'fade-in 0.2s ease-out'
+        }}>
+          <form onSubmit={handleInviteSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'hsl(var(--color-text-muted))' }}>
+              Invitation Code
+            </label>
+            <div style={{ display: 'flex', gap: '4px' }}>
+              <input
+                autoFocus
+                type="password"
+                value={inviteCode}
+                onChange={(e) => {
+                  setInviteCode(e.target.value);
+                  setError(false);
+                }}
+                placeholder="Enter code..."
+                style={{
+                  flex: 1,
+                  padding: '6px 10px',
+                  borderRadius: '6px',
+                  border: error ? '1px solid #ef4444' : '1px solid hsl(var(--color-border))',
+                  background: 'hsl(var(--color-bg-subtle))',
+                  color: 'hsl(var(--color-text-main))',
+                  fontSize: '0.9rem',
+                  outline: 'none',
+                  width: '120px'
+                }}
+              />
+              <button
+                type="submit"
+                style={{
+                  background: 'hsl(var(--color-primary))',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  padding: '0 10px',
+                  fontSize: '0.9rem',
+                  cursor: 'pointer',
+                  fontWeight: 600
+                }}
+              >
+                →
+              </button>
+            </div>
+            {error && <span style={{ fontSize: '0.75rem', color: '#ef4444' }}>Invalid code</span>}
+          </form>
+          {/* Close overlay */}
+          <div
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: -1 }}
+            onClick={() => setShowInviteInput(false)}
+          />
+        </div>
+      )}
+
       <button
-        onClick={signInWithGoogle}
+        onClick={() => setShowInviteInput(!showInviteInput)}
+        title="Access"
         style={{
           background: 'none',
           border: 'none',
           color: 'hsl(var(--color-text-muted))',
-          fontWeight: 500,
           cursor: 'pointer',
-          padding: '8px 16px',
-          fontSize: '0.95rem',
-          transition: 'color 0.2s'
-        }}
-        onMouseEnter={(e) => e.currentTarget.style.color = 'hsl(var(--color-text-main))'}
-        onMouseLeave={(e) => e.currentTarget.style.color = 'hsl(var(--color-text-muted))'}
-      >
-        Log in
-      </button>
-      <button
-        onClick={signInWithGoogle}
-        style={{
+          padding: '8px',
+          borderRadius: '50%',
           display: 'flex',
           alignItems: 'center',
-          gap: '8px',
-          background: 'hsl(var(--color-primary))',
-          color: 'white',
-          border: 'none',
-          padding: '8px 20px',
-          borderRadius: '20px',
-          fontSize: '0.95rem',
-          fontWeight: 600,
-          cursor: 'pointer',
-          boxShadow: 'var(--shadow-sm)',
-          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+          justifyContent: 'center',
+          opacity: 0.5,
+          transition: 'all 0.2s',
+          transform: showInviteInput ? 'rotate(45deg)' : 'none'
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.transform = 'translateY(-1px)';
-          e.currentTarget.style.boxShadow = 'var(--shadow-md)';
+          e.currentTarget.style.opacity = '1';
+          e.currentTarget.style.background = 'hsl(var(--color-bg-subtle))';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.transform = 'translateY(0)';
-          e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
+          if (!showInviteInput) {
+            e.currentTarget.style.opacity = '0.5';
+            e.currentTarget.style.background = 'transparent';
+          }
         }}
       >
-        Sign Up
+        {!showInviteInput ? (
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+            <polyline points="10 17 15 12 10 7" />
+            <line x1="15" y1="12" x2="3" y2="12" />
+          </svg>
+        ) : (
+          <span style={{ fontSize: '1.2rem', lineHeight: 1 }}>+</span>
+        )}
       </button>
     </div>
   );

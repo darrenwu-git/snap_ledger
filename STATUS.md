@@ -56,6 +56,12 @@ Create a simple way to track expenses, likely "snap" implies quick/easy entry (m
   - Added a dedicated "Today" button in the `MonthlySummary` header.
   - Allows one-click return to the current date and month view.
 - ✅ Security: Rotated API keys and removed env files from git tracking.
+- ✅ Restricted Authentication & Minimalist Landing.
+  - Replaced Email Allowlist with **Invitation Code System**.
+  - Invitation code managed via `.env` (`VITE_INVITE_CODE`).
+  - Prevents unauthorized users from even starting the OAuth flow.
+  - Hides login button behind a "Gatekeeper" modal triggered by a discreet icon.
+  - Removed explicit "Sign Up" and "Sign In" text to declutter.
 
 
 ### 2026-01-07

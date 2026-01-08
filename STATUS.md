@@ -39,12 +39,18 @@ Create a simple way to track expenses, likely "snap" implies quick/easy entry (m
   - Clickable date header opens the picker.
   - Supports quick year jumping and direct month selection.
   - **New**: Dedicated Year Grid when in Year View (allows direct year selection).
+- ✅ Implemented Category Editing Flow (UI + Logic).
 - ✅ Implemented Category Filtering.
   - Tapping a category icon in the transaction list filters the view to that specific category.
   - Added "Filtering by [Category]" indicator with a clear button.
   - Streamlines bulk editing/reviewing of specific transaction types (e.g., Uncategorized).
 - ✅ Fixed Bug: Edit Transaction date field alignment.
   - Sanitized `TransactionForm` date initialization to remove timestamp components from ISO strings, ensuring compatibility with `input type="date"`.
+- ✅ Implemented Guest Mode Warning Banner (Data Persistence Alert).
+- ✅ Added "LOCAL" badge for non-logged-in users.
+- ✅ Removed Settings Gear for guest users (simplified UI).
+- ✅ Disabled Auto-Category Creation for guest users (default off).
+  - ✅ Implemented Distinct 'Sign Up' vs 'Log In' UI (Both use Google OAuth).
 
 
 ### 2026-01-07

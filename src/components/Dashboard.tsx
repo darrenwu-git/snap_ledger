@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLedger } from '../context/LedgerContext';
+import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
 import MonthlySummary from './MonthlySummary';
 import TransactionForm from './TransactionForm';
@@ -12,6 +13,8 @@ import type { Transaction } from '../types';
 const Dashboard: React.FC = () => {
   const { transactions, categories, getCategory, addTransaction, addCategory } = useLedger();
   const { apiKey, autoCreateCategories } = useSettings();
+  const { user } = useAuth();
+  const [showGuestWarning, setShowGuestWarning] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
@@ -73,7 +76,7 @@ const Dashboard: React.FC = () => {
         audioBlob,
         categories,
         apiKey,
-        { allowAutoCategoryCreation: autoCreateCategories }
+        { allowAutoCategoryCreation: user ? autoCreateCategories : false }
       );
 
       if (result.type === 'transaction') {
@@ -81,7 +84,7 @@ const Dashboard: React.FC = () => {
         let categoryId = txData.categoryId; // Might be undefined/empty if specific logic applied
 
         // Handle Auto-Create Category
-        if (!categoryId && txData.newCategory && autoCreateCategories) {
+        if (!categoryId && txData.newCategory && user && autoCreateCategories) {
           try {
             categoryId = await addCategory({
               name: txData.newCategory.name,
@@ -183,13 +186,75 @@ const Dashboard: React.FC = () => {
     <div style={{ paddingBottom: '80px' }}>
       <header className="flex-between" style={{ padding: '24px 0' }}>
         <div className="flex-col">
-          <h1 className="text-gradient" style={{ fontSize: '1.75rem' }}>Snap Ledger</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-gradient" style={{ fontSize: '1.75rem' }}>Snap Ledger</h1>
+            {!user && (
+              <span style={{
+                fontSize: '0.7rem',
+                background: 'rgba(251, 191, 36, 0.2)',
+                color: '#fbbf24',
+                padding: '2px 8px',
+                borderRadius: '12px',
+                fontWeight: 700,
+                letterSpacing: '0.05em',
+                border: '1px solid rgba(251, 191, 36, 0.4)'
+              }}>
+                LOCAL
+              </span>
+            )}
+          </div>
           <span style={{ color: 'hsl(var(--color-text-muted))', fontSize: '0.9rem' }}>Smart Accounting</span>
         </div>
         <div className="flex items-center gap-3">
           <LoginButton onOpenSettings={() => setIsSettingsOpen(true)} />
         </div>
       </header>
+
+      {/* Guest Mode Warning Banner */}
+      {!user && showGuestWarning && (
+        <div className="animate-fade-in" style={{
+          background: 'rgba(251, 191, 36, 0.05)', // Very subtle amber tint
+          border: '1px solid rgba(251, 191, 36, 0.3)',
+          borderRadius: '16px',
+          padding: '16px',
+          marginBottom: '24px',
+          display: 'flex',
+          alignItems: 'start',
+          gap: '12px',
+          position: 'relative',
+          backdropFilter: 'blur(4px)'
+        }}>
+          <span style={{ fontSize: '1.4rem', lineHeight: 1 }}>⚠️</span>
+          <div className="flex-col" style={{ flex: 1, gap: '4px' }}>
+            <strong style={{ color: '#fbbf24', fontSize: '0.95rem' }}>Guest Mode Active</strong>
+            <p style={{ margin: 0, fontSize: '0.9rem', color: 'hsl(var(--color-text-main))', lineHeight: 1.5 }}>
+              Transactions are saved <strong style={{ color: 'hsl(var(--color-text-main))' }}>locally on this device</strong>.
+              <br />
+              <span style={{ color: 'hsl(var(--color-text-muted))', fontSize: '0.85rem' }}>
+                If you clear your cache or change devices, this data will be lost. Sign in to sync permanently.
+              </span>
+            </p>
+          </div>
+          <button
+            onClick={() => setShowGuestWarning(false)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'hsl(var(--color-text-muted))',
+              fontSize: '1.1rem',
+              cursor: 'pointer',
+              padding: '4px',
+              lineHeight: 1,
+              opacity: 0.7,
+              transition: 'opacity 0.2s'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+            onMouseLeave={(e) => e.currentTarget.style.opacity = '0.7'}
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       <MonthlySummary
         currentDate={currentDate}

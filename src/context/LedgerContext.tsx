@@ -11,6 +11,7 @@ interface LedgerContextType {
   updateTransaction: (id: string, transaction: Omit<Transaction, 'id'>) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
   addCategory: (category: Omit<Category, 'id'>) => Promise<string>;
+  updateCategory: (id: string, category: Omit<Category, 'id'>) => Promise<void>;
   deleteCategory: (id: string) => Promise<void>;
   getCategory: (id: string) => Category | undefined;
 }
@@ -231,6 +232,29 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return newCategory.id;
   };
 
+  // UPDATE CATEGORY
+  const updateCategory = async (id: string, category: Omit<Category, 'id'>) => {
+    const prevCategories = [...customCategories];
+    setCustomCategories(prev => prev.map(c => c.id === id ? { ...category, id } : c));
+
+    if (user) {
+      const { error } = await supabase.from('categories').update({
+        name: category.name,
+        icon: category.icon,
+        type: category.type
+      }).eq('id', id);
+
+      if (error) {
+        console.error('Error updating category:', error);
+        setCustomCategories(prevCategories);
+        throw new Error(error.message || 'Failed to update category');
+      }
+    } else {
+      const updated = customCategories.map(c => c.id === id ? { ...category, id } : c);
+      localStorage.setItem('snap_ledger_categories', JSON.stringify(updated));
+    }
+  };
+
   // DELETE CATEGORY
   const deleteCategory = async (id: string) => {
     const prevCategories = [...customCategories];
@@ -254,7 +278,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   return (
-    <LedgerContext.Provider value={{ transactions, categories, addTransaction, updateTransaction, deleteTransaction, getCategory, addCategory, deleteCategory }}>
+    <LedgerContext.Provider value={{ transactions, categories, addTransaction, updateTransaction, deleteTransaction, getCategory, addCategory, updateCategory, deleteCategory }}>
       {children}
     </LedgerContext.Provider>
   );

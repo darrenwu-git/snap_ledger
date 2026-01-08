@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useLedger } from '../context/LedgerContext';
 import { DEFAULT_CATEGORIES } from '../types';
-import type { Transaction, TransactionType } from '../types';
+import type { Transaction, TransactionType, Category } from '../types';
 
 const PRESET_ICONS = [
   '🍔', '🚗', '🛍️', '🎮', '🧾', '💊', '💰', '🎁', '📈',
@@ -16,7 +16,7 @@ interface TransactionFormProps {
 }
 
 const TransactionForm: React.FC<TransactionFormProps> = ({ onClose, initialData, defaultValues }) => {
-  const { addTransaction, updateTransaction, deleteTransaction, categories, addCategory, deleteCategory } = useLedger();
+  const { addTransaction, updateTransaction, deleteTransaction, categories, addCategory, updateCategory, deleteCategory } = useLedger();
   const [type, setType] = useState<TransactionType>(initialData?.type || defaultValues?.type || 'expense');
   const [amount, setAmount] = useState(initialData?.amount?.toString() || defaultValues?.amount?.toString() || '');
   const [categoryId, setCategoryId] = useState(initialData?.categoryId || defaultValues?.categoryId || '');
@@ -27,6 +27,8 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onClose, initialData,
 
   // Custom Category State
   const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+  const [hoveredCategoryId, setHoveredCategoryId] = useState<string | null>(null);
   const [newCatName, setNewCatName] = useState('');
   const [newCatIcon, setNewCatIcon] = useState('');
 
@@ -77,27 +79,45 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onClose, initialData,
     }
   };
 
+  const handleEditCategory = (e: React.MouseEvent, cat: Category) => {
+    e.stopPropagation();
+    setEditingCategoryId(cat.id);
+    setNewCatName(cat.name);
+    setNewCatIcon(cat.icon);
+    setIsAddingCategory(true);
+    setCategoryId('');
+    setError(null);
+  };
 
-
-  const handleAddCategory = async () => {
+  const handleSaveCategory = async () => {
     if (!newCatName || !newCatIcon) {
       setError('Please select an icon and enter a name.');
       return;
     }
 
     try {
-      const newId = await addCategory({
-        name: newCatName,
-        icon: newCatIcon,
-        type: type
-      });
+      if (editingCategoryId) {
+        await updateCategory(editingCategoryId, {
+          name: newCatName,
+          icon: newCatIcon,
+          type: type
+        });
+        setEditingCategoryId(null);
+      } else {
+        const newId = await addCategory({
+          name: newCatName,
+          icon: newCatIcon,
+          type: type
+        });
+        setCategoryId(newId);
+      }
+
       setIsAddingCategory(false);
       setNewCatName('');
       setNewCatIcon('');
-      setCategoryId(newId);
       setError(null);
     } catch (e: any) {
-      setError(e.message || 'Failed to add category');
+      setError(e.message || 'Failed to save category');
     }
   };
 
@@ -108,6 +128,10 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onClose, initialData,
     try {
       await deleteCategory(id);
       if (categoryId === id) setCategoryId('');
+      if (editingCategoryId === id) {
+        setIsAddingCategory(false);
+        setEditingCategoryId(null);
+      }
     } catch (e: any) {
       console.error(e);
       setError('Failed to delete category');
@@ -176,12 +200,27 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onClose, initialData,
           <div className="flex-between" style={{ marginBottom: '8px' }}>
             <label style={{ color: 'hsl(var(--color-text-muted))', fontSize: '0.9rem' }}>Category</label>
             {isAddingCategory && (
-              <button type="button" onClick={() => setIsAddingCategory(false)} style={{ fontSize: '0.8rem', color: 'hsl(var(--color-text-muted))' }}>Cancel</button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAddingCategory(false);
+                  setEditingCategoryId(null);
+                  setNewCatName('');
+                  setNewCatIcon('');
+                }}
+                style={{ fontSize: '0.8rem', color: 'hsl(var(--color-text-muted))' }}
+              >
+                Cancel
+              </button>
             )}
           </div>
 
           {isAddingCategory ? (
             <div className="glass-panel" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '4px' }}>
+                {editingCategoryId ? 'Edit Category' : 'New Category'}
+              </div>
+
               {/* Icon Picker */}
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'hsl(var(--color-text-muted))', marginBottom: '8px', display: 'block' }}>Select Icon</label>
@@ -242,64 +281,98 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onClose, initialData,
 
               <button
                 type="button"
-                onClick={handleAddCategory}
+                onClick={handleSaveCategory}
                 className="btn-primary"
                 style={{ width: '100%' }}
               >
-                Add Category
+                {editingCategoryId ? 'Update Category' : 'Add Category'}
               </button>
+
+              {editingCategoryId && (
+                <button
+                  type="button"
+                  onClick={(e) => handleDeleteCategory(e, editingCategoryId)}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    color: 'hsl(var(--color-expense))',
+                    fontWeight: 600,
+                    background: 'transparent',
+                    border: '1px solid hsl(var(--color-expense))',
+                    borderRadius: 'var(--radius-md)',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Delete Category
+                </button>
+              )}
             </div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
               {filteredCategories.map((cat) => (
-                <button
+                <div
                   key={cat.id}
-                  type="button"
-                  onClick={() => setCategoryId(cat.id)}
-                  className="flex-col flex-center"
-                  style={{
-                    position: 'relative',
-                    padding: '12px',
-                    borderRadius: 'var(--radius-md)',
-                    background: categoryId === cat.id ? 'hsl(var(--color-primary-glow))' : 'hsl(var(--color-surface))',
-                    border: categoryId === cat.id ? '1px solid hsl(var(--color-primary))' : '1px solid transparent',
-                    transition: 'all 0.2s',
-                    gap: '8px'
-                  }}
+                  style={{ position: 'relative' }}
+                  onMouseEnter={() => setHoveredCategoryId(cat.id)}
+                  onMouseLeave={() => setHoveredCategoryId(null)}
                 >
-                  {isCustomCategory(cat.id) && (
+                  <button
+                    type="button"
+                    onClick={() => setCategoryId(cat.id)}
+                    className="flex-col flex-center"
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      borderRadius: 'var(--radius-md)',
+                      background: categoryId === cat.id ? 'hsl(var(--color-primary-glow))' : 'hsl(var(--color-surface))',
+                      border: categoryId === cat.id ? '1px solid hsl(var(--color-primary))' : '1px solid transparent',
+                      transition: 'all 0.2s',
+                      gap: '8px'
+                    }}
+                  >
+                    <div style={{ fontSize: '1.5rem' }}>{cat.icon}</div>
+                    <div style={{ fontSize: '0.75rem', color: categoryId === cat.id ? 'white' : 'hsl(var(--color-text-muted))', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>{cat.name}</div>
+                  </button>
+
+                  {isCustomCategory(cat.id) && (hoveredCategoryId === cat.id || categoryId === cat.id) && (
                     <div
-                      onClick={(e) => handleDeleteCategory(e, cat.id)}
+                      onClick={(e) => handleEditCategory(e, cat)}
                       style={{
                         position: 'absolute',
                         top: '-6px',
                         right: '-6px',
-                        background: 'hsl(var(--color-expense))',
+                        background: 'hsl(var(--color-primary))',
                         color: 'white',
                         borderRadius: '50%',
-                        width: '20px',
-                        height: '20px',
+                        width: '24px',
+                        height: '24px',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         fontSize: '12px',
                         fontWeight: 'bold',
                         boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                        zIndex: 10
+                        zIndex: 10,
+                        cursor: 'pointer',
+                        opacity: 0.9
                       }}
+                      title="Edit Category"
                     >
-                      ×
+                      ✎
                     </div>
                   )}
-                  <div style={{ fontSize: '1.5rem' }}>{cat.icon}</div>
-                  <div style={{ fontSize: '0.75rem', color: categoryId === cat.id ? 'white' : 'hsl(var(--color-text-muted))', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>{cat.name}</div>
-                </button>
+                </div>
               ))}
 
                 {/* Add New Category Button */}
                 <button
                   type="button"
-                  onClick={() => setIsAddingCategory(true)}
+                  onClick={() => {
+                    setEditingCategoryId(null);
+                    setNewCatName('');
+                    setNewCatIcon('');
+                    setIsAddingCategory(true);
+                  }}
                   className="flex-col flex-center"
                   style={{
                     padding: '12px',

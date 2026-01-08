@@ -6,17 +6,14 @@ import TransactionForm from './TransactionForm';
 import VoiceInput from './VoiceInput';
 import { parseVoiceInput } from '../services/VoiceParser';
 import { LoginButton } from './LoginButton';
+import SettingsModal from './SettingsModal';
 import type { Transaction } from '../types';
 
-
-
-
-
 const Dashboard: React.FC = () => {
-  const { transactions, categories, getCategory, addTransaction } = useLedger(); // Need addTransaction here
-  const { apiKey } = useSettings();
+  const { transactions, categories, getCategory, addTransaction, addCategory } = useLedger();
+  const { apiKey, autoCreateCategories } = useSettings();
   const [isAdding, setIsAdding] = useState(false);
-
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [voiceDraft, setVoiceDraft] = useState<Partial<Transaction> | undefined>(undefined);
@@ -65,16 +62,39 @@ const Dashboard: React.FC = () => {
     setToast(null);
 
     try {
-      const result = await parseVoiceInput(audioBlob, categories, apiKey);
+      const result = await parseVoiceInput(
+        audioBlob,
+        categories,
+        apiKey,
+        { allowAutoCategoryCreation: autoCreateCategories }
+      );
 
       if (result.type === 'transaction') {
         const txData = result.data;
-        // CONFIDENCE CHECK: If high confidence (>= 0.9) AND has category, AUTO-SAVE
-        if ((txData.confidence || 0) >= 0.9 && txData.categoryId && txData.amount) {
+        let categoryId = txData.categoryId; // Might be undefined/empty if specific logic applied
+
+        // Handle Auto-Create Category
+        if (!categoryId && txData.newCategory && autoCreateCategories) {
+          try {
+            categoryId = await addCategory({
+              name: txData.newCategory.name,
+              icon: txData.newCategory.icon,
+              type: txData.newCategory.type
+            });
+            setToast({ message: `Created category: ${txData.newCategory.name}`, type: 'success' });
+          } catch (e) {
+            console.error("Failed to auto-create category", e);
+            // Fallback to manual add if category creation fails
+            setToast({ message: "Failed to create category automatically.", type: 'error' });
+          }
+        }
+
+        // CONFIDENCE CHECK: If high confidence (>= 0.9) AND has category (existing or newly created) AND amount, AUTO-SAVE
+        if ((txData.confidence || 0) >= 0.9 && categoryId && txData.amount) {
           try {
             await addTransaction({
               amount: txData.amount,
-              categoryId: txData.categoryId,
+              categoryId: categoryId,
               type: txData.type || 'expense',
               date: txData.date || new Date().toISOString().split('T')[0],
               note: txData.note || '',
@@ -87,7 +107,13 @@ const Dashboard: React.FC = () => {
         } else {
           // Low confidence or missing info -> Open Edit Modal
           setIsAdding(true);
-          setVoiceDraft(txData);
+          // Pass the potentially new category ID too if we managed to create it, 
+          // OR if we didn't, the form will allow user to pick/create.
+          // Since Transaction definition expects categoryId as string, if we have it, great.
+          setVoiceDraft({
+            ...txData,
+            categoryId: categoryId || undefined
+          });
           setToast({ message: "Please review details", type: 'info' });
         }
       } else if (result.type === 'uncategorized') {
@@ -149,7 +175,7 @@ const Dashboard: React.FC = () => {
           <span style={{ color: 'hsl(var(--color-text-muted))', fontSize: '0.9rem' }}>Smart Accounting</span>
         </div>
         <div className="flex items-center gap-3">
-          <LoginButton />
+          <LoginButton onOpenSettings={() => setIsSettingsOpen(true)} />
         </div>
       </header>
 
@@ -362,7 +388,13 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
         )
-      }    </div >
+      }
+
+      {/* Settings Modal */}
+      {isSettingsOpen && (
+        <SettingsModal onClose={() => setIsSettingsOpen(false)} />
+      )}
+    </div>
   );
 };
 

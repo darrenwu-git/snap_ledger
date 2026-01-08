@@ -15,6 +15,16 @@ Create a simple way to track expenses, likely "snap" implies quick/easy entry (m
 
 ## 📅 Daily Updates
 
+### 2026-01-08
+- ✅ Implemented "AI Auto-Create Category" feature.
+  - Added "Settings" modal with toggle for auto-category creation.
+  - Enhanced `VoiceParser` prompting to suggest new categories (name + icon) when enabled.
+  - Updated `Dashboard` to orchestrate category creation before transaction insertion.
+- ✅ Implemented "Edit Category" functionality.
+  - Added pencil icon ✎ to custom categories in `TransactionForm`.
+  - Added `updateCategory` to `LedgerContext` (handles local + supabase).
+  - Allowed users to modify name and icon of custom categories.
+
 ### 2026-01-07
 - ✅ Fixed Critical Persistence Bug.
   - Diagnosed schema mismatch (Frontend `categoryId`/`note` vs Backend `category`/`description`).

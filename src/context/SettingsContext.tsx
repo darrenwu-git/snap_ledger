@@ -4,6 +4,8 @@ interface SettingsContextType {
   apiKey: string;
   language: string;
   setLanguage: (lang: string) => void;
+  autoCreateCategories: boolean;
+  setAutoCreateCategories: (enabled: boolean) => void;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -16,12 +18,20 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return localStorage.getItem('snap_ledger_language') || navigator.language || 'en-US';
   });
 
+  const [autoCreateCategories, setAutoCreateCategories] = useState(() => {
+    return localStorage.getItem('snap_ledger_auto_create_categories') === 'true';
+  });
+
   useEffect(() => {
     localStorage.setItem('snap_ledger_language', language);
   }, [language]);
 
+  useEffect(() => {
+    localStorage.setItem('snap_ledger_auto_create_categories', String(autoCreateCategories));
+  }, [autoCreateCategories]);
+
   return (
-    <SettingsContext.Provider value={{ apiKey, language, setLanguage }}>
+    <SettingsContext.Provider value={{ apiKey, language, setLanguage, autoCreateCategories, setAutoCreateCategories }}>
       {children}
     </SettingsContext.Provider>
   );

@@ -7,6 +7,11 @@ export interface ParsedTransaction {
   note: string;
   date: string;
   confidence: number;
+  newCategory?: {
+    name: string;
+    icon: string;
+    type: TransactionType;
+  };
 }
 
 export type VoiceIntent =
@@ -16,7 +21,16 @@ export type VoiceIntent =
 
 const API_BASE_URL = '/api';
 
-export const parseVoiceInput = async (audioBlob: Blob, categories: Category[], apiKey: string): Promise<VoiceIntent> => {
+interface ParseOptions {
+  allowAutoCategoryCreation: boolean;
+}
+
+export const parseVoiceInput = async (
+  audioBlob: Blob,
+  categories: Category[],
+  apiKey: string,
+  options: ParseOptions = { allowAutoCategoryCreation: false }
+): Promise<VoiceIntent> => {
   if (!apiKey || apiKey.trim() === '') {
     return {
       type: 'non_accounting',
@@ -58,6 +72,18 @@ export const parseVoiceInput = async (audioBlob: Blob, categories: Category[], a
     const categoryList = categories.map(c => `- ${c.name} (ID: ${c.id}, Type: ${c.type})`).join('\n');
     const today = new Date().toISOString().split('T')[0];
 
+    const newCategoryInstructions = options.allowAutoCategoryCreation
+      ? `6. NEW CATEGORY:
+   - If NONE of the existing categories fit well, you MAY suggest a new category.
+   - Set "categoryId" to null.
+   - Fill "new_category" object with:
+     - "name": Concise name (Traditional Chinese)
+     - "icon": A single emoji representing the category
+     - "type": "expense" or "income"
+   - If an existing category is a good fit, do NOT suggest a new one.`
+      : `6. NEW CATEGORY:
+   - Do NOT suggest new categories. If no category fits, set "categoryId" to null.`;
+
     const systemPrompt = `
 You are a smart financial assistant. user has provided a transaction description.
 Analyze the text and extract the transaction details.
@@ -77,11 +103,12 @@ Rules:
    - Date (YYYY-MM-DD)
    - Note (Summarize in Traditional Chinese (Taiwan/繁體中文))
 4. CONFIDENCE check:
-   - If amount, category, and date are clear -> confidence: 1.0
+   - If amount, category (or valid new category), and date are clear -> confidence: 1.0
    - If category is ambiguous -> confidence: 0.6
    - If amount missing -> confidence: 0.0
 5. LANGUAGE OUTPUT:
-   - All text fields (note, message) MUST be in Traditional Chinese (Taiwan/繁體中文) ONLY.
+   - All text fields (note, message, new category name) MUST be in Traditional Chinese (Taiwan/繁體中文) ONLY.
+${newCategoryInstructions}
 
 Return ONLY raw JSON:
 {
@@ -92,7 +119,12 @@ Return ONLY raw JSON:
   "date": string,
   "note": string,
   "message": string,
-  "confidence": number
+  "confidence": number,
+  "new_category": {
+    "name": string,
+    "icon": string,
+    "type": "expense" | "income"
+  } | null
 }
 `;
 
@@ -141,16 +173,25 @@ Return ONLY raw JSON:
 
     // Determine type based on data completeness
     if (typeof data.amount === 'number') {
-      const confidence = data.confidence || (data.categoryId ? 0.9 : 0.5);
+      let confidence = data.confidence || 0.5;
+
+      // Boost confidence if we have a valid new category suggestion
+      if (!data.categoryId && data.new_category && options.allowAutoCategoryCreation) {
+        if (confidence < 0.9) confidence = 0.9; // Trust the AI's creation if specifically asked
+      } else if (data.categoryId) {
+        if (confidence < 0.9) confidence = 0.9;
+      }
+
       return {
         type: 'transaction',
         data: {
           amount: data.amount,
-          categoryId: data.categoryId || '',
+          categoryId: data.categoryId || '', // Empty string if null
           type: data.type || 'expense',
           date: data.date || today,
           note: data.note || '',
-          confidence: confidence
+          confidence: confidence,
+          newCategory: data.new_category || undefined
         }
       };
     } else {

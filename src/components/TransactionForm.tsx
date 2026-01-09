@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { trackEvent } from '../lib/analytics';
 import { useLedger } from '../context/LedgerContext';
 import { DEFAULT_CATEGORIES } from '../types';
 import type { Transaction, TransactionType, Category } from '../types';
@@ -56,11 +57,18 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onClose, initialData,
         await updateTransaction(initialData.id, transactionData);
       } else {
         await addTransaction(transactionData);
+        // Track Manual Transaction
+        trackEvent('transaction_created', {
+          source: 'manual',
+          category_id: categoryId,
+          auto_categorized: false
+        });
       }
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setError(err.message || 'Failed to save transaction');
+      const message = err instanceof Error ? err.message : 'Failed to save transaction';
+      setError(message);
     } finally {
       setIsSubmitting(false);
     }

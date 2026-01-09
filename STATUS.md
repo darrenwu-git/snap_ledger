@@ -26,6 +26,12 @@ Create a simple way to track expenses, likely "snap" implies quick/easy entry (m
 
 ### 2026-01-09
 
+- ✅ **Implemented Telemetry & Feedback**:
+  - **Supabase Backend**: Added `feedback` and `analytics_events` tables with public insert policies.
+  - **Privacy**: Implemented anonymous ID generation for guest users.
+  - **Metrics**: Tracking `app_opened`, `transaction_created` (Voice vs Manual), and `category_created` (AI Auto-Create).
+  - **Feedback UI**: Added "Feedback" option to User Menu and a dedicated Modal for collecting user thoughts.
+  - **SQL**: Created `SUPABASE_TELEMETRY.sql` for easy migration.
 - ✅ **Conflict Resolution (Restored & Verified)**:
   - Implemented Conflict Resolution (Last Modified Wins) for Guest Data Import.
   - Added `updatedAt` field to Transaction and Category models.
@@ -42,6 +48,11 @@ Create a simple way to track expenses, likely "snap" implies quick/easy entry (m
 - ✅ **Fixed Delete Confirmation Dialog**:
   - Replaced native `window.confirm` with a custom in-UI confirmation to prevent auto-dismissal.
   - Improved UX with clear "Confirm / Cancel" options.
+
+- ✅ **Unit Tests (Telemetry)**:
+  - Created `src/lib/analytics.test.ts` to verify `trackEvent` and `submitFeedback`.
+  - Implemented comprehensive mocks for Supabase (`insert`, `auth`) and `localStorage` to validate logic in isolation.
+  - Confirmed anonymous ID generation and user metadata attachment.
 
 ### 2026-01-08
 - ✅ UI Improvement: Renamed "Daily Transactions" to "Recent Transactions" for better clarity.
@@ -94,30 +105,3 @@ Create a simple way to track expenses, likely "snap" implies quick/easy entry (m
   - Implemented JSON Export and "Merge" Import logic (preserves local edits).
   - Added Auto-Repair for missing categories during import.
   - Updated User Menu to be universal (Guest/User).
-
-
-
-
-### 2026-01-07
-- ✅ Fixed Critical Persistence Bug.
-  - Diagnosed schema mismatch (Frontend `categoryId`/`note` vs Backend `category`/`description`).
-  - Implemented bi-directional field mapping in `LedgerContext`.
-  - Added "Rollback" logic for Optimistic Updates to prevent "Ghost Data".
-  - Enhanced error handling in `Dashboard` and `TransactionForm` to notify users of sync failures.
-
-### 2026-01-06
-- ✅ Completed Backend Persistence.
-  - Configured Supabase Client & Context.
-  - Implemented Google OAuth (with user-provided Client ID).
-  - Added "Cloud Mode" vs "Guest Mode" in `LedgerContext`.
-- ✅ Fixed "stuck icon" bug in voice recording.
-  - Added missing `@keyframes spin` to `index.css`.
-  - Approved `gemini-2.5-flash` model.
-  - Improved `VoiceInput` UX.
-- ✅ Refined Auth & Dashboard UI.
-  - Moved "Sign Out" to Avatar Dropdown (cleaner header).
-  - Emphasized Voice Input as primary action (centered, larger).
-  - De-emphasized manual Add button.
-
-### 2026-01-05
-- Created project.

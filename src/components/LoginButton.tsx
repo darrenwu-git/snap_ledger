@@ -4,9 +4,10 @@ import pkg from '../../package.json';
 
 interface LoginButtonProps {
   onOpenSettings?: () => void;
+  onOpenFeedback?: () => void;
 }
 
-export const LoginButton: React.FC<LoginButtonProps> = ({ onOpenSettings }) => {
+export const LoginButton: React.FC<LoginButtonProps> = ({ onOpenSettings, onOpenFeedback }) => {
   const { user, signInWithGoogle, signOut } = useAuth();
   const [isOpen, setIsOpen] = React.useState(false);
   const [showInviteInput, setShowInviteInput] = React.useState(false);
@@ -200,6 +201,34 @@ export const LoginButton: React.FC<LoginButtonProps> = ({ onOpenSettings }) => {
             >
               <span>⚙️</span>
               Settings
+            </button>
+          )}
+
+          {onOpenFeedback && (
+            <button
+              onClick={() => {
+                setIsOpen(false);
+                onOpenFeedback();
+              }}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                background: 'transparent',
+                border: 'none',
+                color: 'hsl(var(--color-text-main))',
+                cursor: 'pointer',
+                borderRadius: '8px',
+                fontSize: '0.9rem',
+                textAlign: 'left'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'hsl(var(--color-bg-subtle))'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+            >
+              <span>💬</span>
+              Feedback
             </button>
           )}
 

@@ -8,15 +8,19 @@ import VoiceInput from './VoiceInput';
 import { parseVoiceInput } from '../services/VoiceParser';
 import { LoginButton } from './LoginButton';
 import SettingsModal from './SettingsModal';
+import FeedbackModal from './FeedbackModal';
 import type { Transaction } from '../types';
+
+import { trackEvent } from '../lib/analytics';
 
 const Dashboard: React.FC = () => {
   const { transactions, categories, getCategory, addTransaction, addCategory } = useLedger();
   const { apiKey, autoCreateCategories } = useSettings();
   const { user } = useAuth();
   const [showGuestWarning, setShowGuestWarning] = useState(true);
-  const [isAdding, setIsAdding] = useState(false);
+  const [isManualOpen, setIsManualOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
 
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [voiceDraft, setVoiceDraft] = useState<Partial<Transaction> | undefined>(undefined);
@@ -92,6 +96,11 @@ const Dashboard: React.FC = () => {
               type: txData.newCategory.type
             });
             setToast({ message: `Created category: ${txData.newCategory.name}`, type: 'success' });
+            trackEvent('category_created', {
+              name: txData.newCategory.name,
+              source: 'ai_voice',
+              auto_created: true
+            });
           } catch (e) {
             console.error("Failed to auto-create category", e);
             // Fallback to manual add if category creation fails
@@ -109,14 +118,14 @@ const Dashboard: React.FC = () => {
               date: txData.date || new Date().toISOString().split('T')[0],
               note: txData.note || '',
               status: 'completed'
-            } as any);
+            } as Transaction);
             setToast({ message: "Saved!", type: 'success' });
           } catch (e: any) {
             setToast({ message: "Save failed: " + e.message, type: 'error' });
           }
         } else {
           // Low confidence or missing info -> Open Edit Modal
-          setIsAdding(true);
+          setIsManualOpen(true);
           // Pass the potentially new category ID too if we managed to create it, 
           // OR if we didn't, the form will allow user to pick/create.
           // Since Transaction definition expects categoryId as string, if we have it, great.
@@ -128,7 +137,7 @@ const Dashboard: React.FC = () => {
         }
       } else if (result.type === 'uncategorized') {
         setToast({ message: "I heard you, but need help categorizing.", type: 'info' });
-        setIsAdding(true);
+        setIsManualOpen(true);
         setVoiceDraft(result.data);
       } else if (result.type === 'non_accounting') {
         setToast({ message: result.message, type: 'error' });
@@ -156,7 +165,7 @@ const Dashboard: React.FC = () => {
     // NOTE: This handler is called when user clicks X or background.
     // TransactionForm's onSubmit handles the actual "Save" completion.
 
-    if (voiceDraft && isAdding) {
+    if (voiceDraft && isManualOpen) {
       // User cancelled a voice draft -> Save as Draft
       // We need to ensure we have minimal fields.
       if (voiceDraft.amount) {
@@ -168,7 +177,7 @@ const Dashboard: React.FC = () => {
             date: voiceDraft.date || new Date().toISOString().split('T')[0],
             note: voiceDraft.note || '(Draft)',
             status: 'draft'
-          } as any);
+          } as Transaction);
           setToast({ message: "Saved to Pending Review", type: 'info' });
         } catch (e: any) {
           setToast({ message: "Failed to save draft: " + e.message, type: 'error' });
@@ -176,7 +185,7 @@ const Dashboard: React.FC = () => {
       }
     }
 
-    setIsAdding(false);
+    setIsManualOpen(false);
     setEditingTransaction(null);
     setVoiceDraft(undefined);
     setToast(null);
@@ -206,7 +215,10 @@ const Dashboard: React.FC = () => {
           <span style={{ color: 'hsl(var(--color-text-muted))', fontSize: '0.9rem' }}>Smart Accounting</span>
         </div>
         <div className="flex items-center gap-3">
-          <LoginButton onOpenSettings={() => setIsSettingsOpen(true)} />
+          <LoginButton
+            onOpenSettings={() => setIsSettingsOpen(true)}
+            onOpenFeedback={() => setIsFeedbackOpen(true)}
+          />
         </div>
       </header>
 
@@ -422,7 +434,7 @@ const Dashboard: React.FC = () => {
           onClick={() => {
             setEditingTransaction(null);
             setVoiceDraft(undefined);
-            setIsAdding(true);
+            setIsManualOpen(true);
           }}
           className="btn-primary" // Use primary class for consistent hover
           title="Manual Add"
@@ -482,7 +494,7 @@ const Dashboard: React.FC = () => {
 
       {/* Modal for Add or Edit */}
       {
-        (isAdding || editingTransaction) && (
+        (isManualOpen || editingTransaction) && (
           <div style={{
             position: 'fixed',
             top: 0,
@@ -515,6 +527,27 @@ const Dashboard: React.FC = () => {
       {/* Settings Modal */}
       {isSettingsOpen && (
         <SettingsModal onClose={() => setIsSettingsOpen(false)} />
+      )}
+
+      {isFeedbackOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, width: '100%', height: '100%',
+          background: 'rgba(0,0,0,0.6)',
+          zIndex: 200,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '16px'
+        }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsFeedbackOpen(false);
+          }}
+        >
+          <div style={{ width: '100%', maxWidth: '400px' }}>
+            <FeedbackModal onClose={() => setIsFeedbackOpen(false)} />
+          </div>
+        </div>
       )}
     </div>
   );

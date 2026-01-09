@@ -85,9 +85,11 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             ...t,
             status: t.status || 'completed'
           }));
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           setTransactions(migrated);
         } catch (e) {
           console.error("Failed to parse transactions", e);
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           setTransactions([]);
         }
       } else {

@@ -61,7 +61,13 @@ Create a simple way to track expenses, likely "snap" implies quick/easy entry (m
   - Invitation code managed via `.env` (`VITE_INVITE_CODE`).
   - Prevents unauthorized users from even starting the OAuth flow.
   - Hides login button behind a "Gatekeeper" modal triggered by a discreet icon.
-  - Removed explicit "Sign Up" and "Sign In" text to declutter.
+- ✅ Implemented Manual Data Backup (Export/Import).
+  - Added "Settings" access for Guest Mode users.
+  - Implemented JSON Export and "Merge" Import logic (preserves local edits).
+  - Added Auto-Repair for missing categories during import.
+  - Updated User Menu to be universal (Guest/User).
+
+
 
 
 ### 2026-01-07

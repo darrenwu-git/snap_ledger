@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "exportedAt": "2026-01-09T10:00:00.000Z",
+  "transactions": [
+    {
+      "id": "test-auto-1",
+      "amount": 100,
+      "type": "expense",
+      "categoryId": "food",
+      "date": "2026-01-09",
+      "note": "Agent Test: Coffee",
+      "status": "completed"
+    },
+    {
+      "id": "test-auto-2",
+      "amount": 5000,
+      "type": "income",
+      "categoryId": "salary",
+      "date": "2026-01-01",
+      "note": "Agent Test: Salary",
+      "status": "completed"
+    }
+  ],
+  "categories": [
+    {
+      "id": "food",
+      "name": "Food",
+      "icon": "🍔",
+      "type": "expense"
+    },
+    {
+      "id": "salary",
+      "name": "Salary",
+      "icon": "💰",
+      "type": "income"
+    }
+  ]
+}

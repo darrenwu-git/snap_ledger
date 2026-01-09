@@ -13,7 +13,26 @@ Create a simple way to track expenses, likely "snap" implies quick/easy entry (m
 - ⬜ Photo/Image Input
 - 🚧 Refinement & Polish
 
+## 🔮 Future Roadmap / To-Do
+- ⬜ **Conflict Resolution (Last Modified Wins)**:
+  - Add `updatedAt` timestamp to `Transaction` and `Category` data models.
+  - Update `importData` logic to compare timestamps: if incoming `updatedAt` > local `updatedAt`, overwrite.
+  - Crucial for robust multi-device sync or guest-mode backup/restore.
+  - *Deferred due to complexity bugs on 2026-01-09.*
+
 ## 📅 Daily Updates
+
+### 2026-01-09
+- ✅ **Fixed Export Filename Issue (Robustness)**:
+  - Replaced JavaScript-based "fake click" with a **native `<a>` tag** link.
+  - Implemented **stable Blob URL generation** (using `useRef`) to prevent "Check internet connection" errors caused by premature revocation during re-renders.
+  - Ensured filename `snap_ledger_backup_YYYY-MM-DD.json` is respected by browsers (specifically Chrome/Safari on macOS) by forcing `application/octet-stream` (optional) or just using proper native behavior.
+- ↺ **Revert**:
+  - Reverted "Last Modified Wins" implementation to restore stability after encountering bug reports.
+  - Moved feature to Backlog.
+- ✅ **Fixed Delete Confirmation Dialog**:
+  - Replaced native `window.confirm` with a custom in-UI confirmation to prevent auto-dismissal.
+  - Improved UX with clear "Confirm / Cancel" options.
 
 ### 2026-01-08
 - ✅ UI Improvement: Renamed "Daily Transactions" to "Recent Transactions" for better clarity.

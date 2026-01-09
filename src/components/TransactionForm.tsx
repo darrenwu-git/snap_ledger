@@ -66,9 +66,11 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onClose, initialData,
     }
   };
 
+  const [isDeleteConfirming, setIsDeleteConfirming] = useState(false);
+
   const handleDelete = async () => {
     if (initialData) {
-      if (!window.confirm('Are you sure you want to delete this?')) return;
+      // Confirmation handled by UI state now
 
       setError(null);
       setIsSubmitting(true);
@@ -78,6 +80,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onClose, initialData,
       } catch (err: any) {
         setError(err.message || 'Failed to delete');
         setIsSubmitting(false);
+        setIsDeleteConfirming(false); // Reset on error
       }
     }
   };
@@ -417,22 +420,76 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onClose, initialData,
         </button>
 
         {initialData && (
-          <button
-            type="button"
-            onClick={handleDelete}
-            disabled={isSubmitting}
-            style={{
-              marginTop: '8px',
-              padding: '12px',
-              color: 'hsl(var(--color-expense))',
-              fontWeight: 600,
-              width: '100%',
-              opacity: isSubmitting ? 0.5 : 1,
-              cursor: isSubmitting ? 'not-allowed' : 'pointer' 
-            }}
-          >
-            {isSubmitting ? 'Processing...' : 'Delete Transaction'}
-          </button>
+          <div style={{ marginTop: '8px' }}>
+            {!isDeleteConfirming ? (
+              <button
+                type="button"
+                onClick={() => setIsDeleteConfirming(true)}
+                disabled={isSubmitting}
+                style={{
+                  padding: '12px',
+                  color: 'hsl(var(--color-expense))',
+                  fontWeight: 600,
+                  width: '100%',
+                  opacity: isSubmitting ? 0.5 : 1,
+                  cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                  background: 'transparent',
+                  border: '1px solid hsl(var(--color-expense))',
+                  borderRadius: 'var(--radius-md)'
+                }}
+              >
+                Delete Transaction
+              </button>
+            ) : (
+              <div className="animate-fade-in" style={{
+                background: 'rgba(239, 68, 68, 0.1)',
+                padding: '12px',
+                borderRadius: 'var(--radius-md)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px'
+              }}>
+                <div style={{ textAlign: 'center', color: 'hsl(var(--color-expense))', fontWeight: 600 }}>
+                  Are you sure?
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setIsDeleteConfirming(false)}
+                    style={{
+                      flex: 1,
+                      padding: '8px',
+                      color: 'hsl(var(--color-text-muted))',
+                      background: 'transparent',
+                      border: '1px solid hsl(var(--color-border))',
+                      borderRadius: 'var(--radius-sm)',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDelete}
+                    disabled={isSubmitting}
+                    style={{
+                      flex: 1,
+                      padding: '8px',
+                      color: 'white',
+                      background: 'hsl(var(--color-expense))',
+                      border: 'none',
+                      borderRadius: 'var(--radius-sm)',
+                      fontWeight: 600,
+                        cursor: isSubmitting ? 'not-allowed' : 'pointer'
+                      }}
+                    >
+                      {isSubmitting ? 'Deleting...' : 'Confirm'}
+                    </button>
+                </div>
+              </div>
+            )}
+          </div>
         )}
       </form>
     </div>

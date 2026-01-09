@@ -5,6 +5,7 @@ export interface Category {
   name: string;
   icon: string;
   type: TransactionType;
+  updatedAt?: string;
 }
 
 export interface Transaction {
@@ -15,6 +16,7 @@ export interface Transaction {
   date: string; // ISO date string
   note?: string;
   status: 'completed' | 'draft';
+  updatedAt?: string;
 }
 
 export const DEFAULT_CATEGORIES: Category[] = [

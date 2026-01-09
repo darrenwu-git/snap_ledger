@@ -17,7 +17,8 @@ create table if not exists public.transactions (
   type text not null check (type in ('income', 'expense')),
   date timestamptz not null default now(),
   status text default 'completed',
-  created_at timestamptz default now()
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
 );
 
 -- Create Categories Table (Idempotent)
@@ -27,7 +28,8 @@ create table if not exists public.categories (
   name text not null,
   icon text not null,
   type text not null check (type in ('income', 'expense')),
-  created_at timestamptz default now()
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
 );
 
 -- Enable RLS

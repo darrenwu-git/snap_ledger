@@ -171,17 +171,16 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
             </div>
           </section>
 
-          {/* Data Management Section (Guest Only) */}
-          {!user && (
-            <section style={{
-              background: 'hsl(var(--color-bg-subtle))',
-              padding: '16px',
-              borderRadius: '16px',
-              border: '1px solid hsl(var(--color-border))'
-            }}>
-              <h3 style={{ fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'hsl(var(--color-text-muted))', marginBottom: '16px' }}>
-                Guest Data Backup
-              </h3>
+          {/* Data Management Section */}
+          <section style={{
+            background: 'hsl(var(--color-bg-subtle))',
+            padding: '16px',
+            borderRadius: '16px',
+            border: '1px solid hsl(var(--color-border))'
+          }}>
+            <h3 style={{ fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'hsl(var(--color-text-muted))', marginBottom: '16px' }}>
+              Data Backup
+            </h3>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <button
@@ -249,8 +248,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
                   {status.msg}
                 </div>
               )}
-            </section>
-          )}
+          </section>
 
         </div>
 

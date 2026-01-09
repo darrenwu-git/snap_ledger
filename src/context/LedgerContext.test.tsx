@@ -83,30 +83,49 @@ describe('LedgerContext Logic Tests', () => {
     expect(screen.getByText(/Agent Test: Coffee/)).toBeDefined();
   });
 
-  it('Local Wins Strategy: Does NOT overwrite modified local data', async () => {
-    // 1. Setup Local Data (User modified amount to 10)
-    const localTx = [{
-      id: 'tx-conflict',
-      amount: 10,
-      type: 'expense',
+  it('Conflict Resolution (Last Modified Wins)', async () => {
+    // Scenario 1: Local is NEWER -> Local Wins
+    const localTxNewer = {
+      id: 'tx-conflict-1',
+      amount: 50,
+      type: 'expense' as const,
       categoryId: 'food',
       date: '2026-01-01',
-      note: 'Local Version',
-      status: 'completed'
-    }];
-    localStorage.setItem('snap_ledger_transactions', JSON.stringify(localTx));
+      note: 'Local Newer',
+      status: 'completed' as const,
+      updatedAt: '2026-01-02T12:00:00Z'
+    };
 
-    // 2. Prepare Backup Data (Old version with amount 100)
+    // Scenario 2: Incoming is NEWER -> Incoming Wins
+    const localTxOlder = {
+      id: 'tx-conflict-2',
+      amount: 10,
+      type: 'expense' as const,
+      categoryId: 'food',
+      date: '2026-01-01',
+      note: 'Local Older',
+      status: 'completed' as const,
+      updatedAt: '2026-01-01T10:00:00Z'
+    };
+
+    localStorage.setItem('snap_ledger_transactions', JSON.stringify([localTxNewer, localTxOlder]));
+
+    // Backup Data
     const backupPayload = {
-      transactions: [{
-        id: 'tx-conflict',
-        amount: 100, // Should be ignored
-        type: 'expense',
-        categoryId: 'food',
-        date: '2026-01-01',
-        note: 'Backup Version',
-        status: 'completed'
-      }],
+      transactions: [
+        {
+          ...localTxNewer,
+          amount: 100, // Old value
+          note: 'Backup Older',
+          updatedAt: '2026-01-01T10:00:00Z' // Older than local
+        },
+        {
+          ...localTxOlder,
+          amount: 500, // New value
+          note: 'Backup Newer',
+          updatedAt: '2026-01-02T12:00:00Z' // Newer than local
+        }
+      ],
       categories: []
     };
 
@@ -116,28 +135,29 @@ describe('LedgerContext Logic Tests', () => {
       </LedgerProvider>
     );
 
-    // Verify Local is loaded first
+    // Initial check
     await waitFor(() => {
-      expect(screen.getByTestId('tx-count').textContent).toBe('1');
+      expect(screen.getByTestId('tx-count').textContent).toBe('2');
     });
-    expect(screen.getByTestId('tx-tx-conflict').textContent).toContain('10');
-    expect(screen.getByTestId('tx-tx-conflict').textContent).toContain('Local Version');
 
-    // 3. Perform Import
+    // Run Import
     await act(async () => {
       screen.getByTestId('btn-import').click();
     });
 
-    // 4. Result Assertion: Should REMAIN 10 (Local Version)
     await waitFor(() => {
-      // Still 1 transaction implies no duplicate added
-      expect(screen.getByTestId('tx-count').textContent).toBe('1');
+      expect(screen.getByTestId('tx-count').textContent).toBe('2');
     });
 
-    // Check specific content
-    const txElement = screen.getByTestId('tx-tx-conflict');
-    expect(txElement.textContent).toContain('10'); // NOT 100
-    expect(txElement.textContent).toContain('Local Version'); // NOT Backup Version
+    // Check Scenario 1: Local should win
+    const tx1 = screen.getByTestId('tx-tx-conflict-1');
+    expect(tx1.textContent).toContain('50');
+    expect(tx1.textContent).toContain('Local Newer');
+
+    // Check Scenario 2: Incoming should win
+    const tx2 = screen.getByTestId('tx-tx-conflict-2');
+    expect(tx2.textContent).toContain('500');
+    expect(tx2.textContent).toContain('Backup Newer');
   });
 
   it('New Data Only: Merges new transactions while keeping local', async () => {

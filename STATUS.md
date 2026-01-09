@@ -1,5 +1,8 @@
 # Project Status: snap ledger for easy tracking expenses
 
+## 🧠 Project Preferences
+- **Unit Testing**: Prioritize implementing server-side Unit Tests (Vitest) for logic-heavy features whenever possible to reduce reliance on manual browser testing.
+
 ## 🎯 Objective
 Create a simple way to track expenses, likely "snap" implies quick/easy entry (maybe photo or quick text?).
 
@@ -14,22 +17,28 @@ Create a simple way to track expenses, likely "snap" implies quick/easy entry (m
 - 🚧 Refinement & Polish
 
 ## 🔮 Future Roadmap / To-Do
-- ⬜ **Conflict Resolution (Last Modified Wins)**:
+- ✅ **Conflict Resolution (Last Modified Wins)**:
   - Add `updatedAt` timestamp to `Transaction` and `Category` data models.
   - Update `importData` logic to compare timestamps: if incoming `updatedAt` > local `updatedAt`, overwrite.
   - Crucial for robust multi-device sync or guest-mode backup/restore.
-  - *Deferred due to complexity bugs on 2026-01-09.*
 
 ## 📅 Daily Updates
 
 ### 2026-01-09
+
+- ✅ **Conflict Resolution (Restored & Verified)**:
+  - Implemented Conflict Resolution (Last Modified Wins) for Guest Data Import.
+  - Added `updatedAt` field to Transaction and Category models.
+  - 📊 **Test Coverage Verification**:
+  - `src/context/LedgerContext.tsx`: 37.62% Statement Coverage (focused on Import Logic).
+  - Validated Conflict Resolution (Last Modified Wins), New Data Merge, and Auto-Category Creation.
+  - Integration with Cloud Persistence (Supabase) remains to be fully covered by automated tests (relies on mocks).
 - ✅ **Fixed Export Filename Issue (Robustness)**:
   - Replaced JavaScript-based "fake click" with a **native `<a>` tag** link.
   - Implemented **stable Blob URL generation** (using `useRef`) to prevent "Check internet connection" errors caused by premature revocation during re-renders.
   - Ensured filename `snap_ledger_backup_YYYY-MM-DD.json` is respected by browsers (specifically Chrome/Safari on macOS) by forcing `application/octet-stream` (optional) or just using proper native behavior.
-- ↺ **Revert**:
-  - Reverted "Last Modified Wins" implementation to restore stability after encountering bug reports.
-  - Moved feature to Backlog.
+- ↺ **Revert (Previous)**:
+  - (Resolved) Reverted "Last Modified Wins" earlier due to bugs, now re-implemented and verified.
 - ✅ **Fixed Delete Confirmation Dialog**:
   - Replaced native `window.confirm` with a custom in-UI confirmation to prevent auto-dismissal.
   - Improved UX with clear "Confirm / Cancel" options.

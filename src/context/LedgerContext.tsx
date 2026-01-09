@@ -27,7 +27,8 @@ const mapFromDb = (row: any): Transaction => ({
   categoryId: row.category, // DB: category -> App: categoryId
   date: row.date,
   note: row.description,    // DB: description -> App: note
-  status: row.status || 'completed'
+  status: row.status || 'completed',
+  updatedAt: row.updated_at
 });
 
 export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -67,7 +68,8 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             id: c.id,
             name: c.name,
             icon: c.icon,
-            type: c.type
+            type: c.type,
+            updatedAt: c.updated_at
           })));
         }
       };
@@ -111,7 +113,8 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const newTransaction = {
       ...transaction,
       id: crypto.randomUUID(),
-      status: transaction.status || 'completed'
+      status: transaction.status || 'completed',
+      updatedAt: new Date().toISOString()
     };
 
     // Optimistic Update
@@ -128,7 +131,8 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         category: newTransaction.categoryId, // Map categoryId -> category
         description: newTransaction.note,    // Map note -> description
         date: newTransaction.date,
-        status: newTransaction.status
+        status: newTransaction.status,
+        updated_at: newTransaction.updatedAt
       };
 
       const { error } = await supabase.from('transactions').insert(payload);
@@ -149,8 +153,9 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // UPDATE
   const updateTransaction = async (id: string, updatedT: Omit<Transaction, 'id'>) => {
     // Optimistic Update
+    const updatedWithTime = { ...updatedT, updatedAt: new Date().toISOString() };
     const previousTransactions = [...transactions];
-    setTransactions((prev) => prev.map((t) => (t.id === id ? { ...updatedT, id } : t)));
+    setTransactions((prev) => prev.map((t) => (t.id === id ? { ...updatedWithTime, id } : t)));
 
     if (user) {
       const payload = {
@@ -159,7 +164,8 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         category: updatedT.categoryId, // Map categoryId -> category
         description: updatedT.note,    // Map note -> description
         date: updatedT.date,
-        status: updatedT.status
+        status: updatedT.status,
+        updated_at: updatedWithTime.updatedAt
       };
 
       const { error } = await supabase
@@ -173,7 +179,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         throw new Error(error.message || 'Failed to update in cloud');
       }
     } else {
-      const updatedList = transactions.map((t) => (t.id === id ? { ...updatedT, id } : t));
+      const updatedList = transactions.map((t) => (t.id === id ? { ...updatedWithTime, id } : t));
       localStorage.setItem('snap_ledger_transactions', JSON.stringify(updatedList));
     }
   };
@@ -205,7 +211,8 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const addCategory = async (category: Omit<Category, 'id'>): Promise<string> => {
     const newCategory = {
       ...category,
-      id: crypto.randomUUID() // Valid UUID for both local and Supabase (uuid type)
+      id: crypto.randomUUID(), // Valid UUID for both local and Supabase (uuid type)
+      updatedAt: new Date().toISOString()
     };
 
     const prevCategories = [...customCategories];
@@ -217,7 +224,8 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         user_id: user.id,
         name: newCategory.name,
         icon: newCategory.icon,
-        type: newCategory.type
+        type: newCategory.type,
+        updated_at: newCategory.updatedAt
       });
 
       if (error) {
@@ -235,14 +243,16 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // UPDATE CATEGORY
   const updateCategory = async (id: string, category: Omit<Category, 'id'>) => {
+    const updatedWithTime = { ...category, updatedAt: new Date().toISOString() };
     const prevCategories = [...customCategories];
-    setCustomCategories(prev => prev.map(c => c.id === id ? { ...category, id } : c));
+    setCustomCategories(prev => prev.map(c => c.id === id ? { ...updatedWithTime, id } : c));
 
     if (user) {
       const { error } = await supabase.from('categories').update({
         name: category.name,
         icon: category.icon,
-        type: category.type
+        type: category.type,
+        updated_at: updatedWithTime.updatedAt
       }).eq('id', id);
 
       if (error) {
@@ -251,7 +261,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         throw new Error(error.message || 'Failed to update category');
       }
     } else {
-      const updated = customCategories.map(c => c.id === id ? { ...category, id } : c);
+      const updated = customCategories.map(c => c.id === id ? { ...updatedWithTime, id } : c);
       localStorage.setItem('snap_ledger_categories', JSON.stringify(updated));
     }
   };
@@ -274,31 +284,36 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   };
 
-  // IMPORT DATA (Guest Mode Only)
+  // IMPORT DATA
   const importData = async (data: BackupData) => {
-    if (user) {
-      throw new Error("Import is currently supported only in Guest Mode.");
-    }
-
     try {
-      // 1. Merge Categories (Local Wins)
+      // 1. Merge Categories (Last Modified Wins)
       const mergedCats = [...customCategories];
       const incomingCats = data.categories || [];
+      const changedCats: Category[] = [];
 
       incomingCats.forEach(c => {
-        // Only add if it doesn't exist locally
         const existingIdx = mergedCats.findIndex(ec => ec.id === c.id);
         if (existingIdx === -1) {
           mergedCats.push(c);
+          changedCats.push(c);
+        } else {
+          // Last Modified Wins
+          const existing = mergedCats[existingIdx];
+          const existingTime = existing.updatedAt ? new Date(existing.updatedAt).getTime() : 0;
+          const incomingTime = c.updatedAt ? new Date(c.updatedAt).getTime() : 0;
+
+          if (incomingTime > existingTime) {
+            mergedCats[existingIdx] = c;
+            changedCats.push(c);
+          }
         }
       });
 
-      setCustomCategories(mergedCats);
-      localStorage.setItem('snap_ledger_categories', JSON.stringify(mergedCats));
-
-      // 2. Merge Transactions (Local Wins)
+      // 2. Merge Transactions (Last Modified Wins)
       const mergedTx = [...transactions];
       const incomingTx = data.transactions || [];
+      const changedTx: Transaction[] = [];
 
       // Auto-Create Missing Categories from Transactions
       const allCategoryIds = new Set([
@@ -308,41 +323,87 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
       incomingTx.forEach(t => {
         if (t.categoryId && !allCategoryIds.has(t.categoryId)) {
-          // Detected a category used in transaction but not defined
-          // We create it automatically to prevent "Uncategorized" display
           const newId = t.categoryId;
-          // Simple heuristic: Capitalize ID for name
           const newName = newId.charAt(0).toUpperCase() + newId.slice(1);
-
           const newCat: Category = {
             id: newId,
             name: newName,
-            icon: '🏷️', // Default icon for imported orphans
-            type: t.type || 'expense'
+            icon: '🏷️',
+            type: t.type || 'expense',
+            updatedAt: new Date().toISOString()
           };
-
           mergedCats.push(newCat);
-          allCategoryIds.add(newId); // Add to set to avoid duplicates
+          changedCats.push(newCat);
+          allCategoryIds.add(newId);
         }
       });
 
-      // Re-save categories if we added new ones from transactions
-      setCustomCategories(mergedCats);
-      localStorage.setItem('snap_ledger_categories', JSON.stringify(mergedCats));
-
       incomingTx.forEach(t => {
-        // Only add if it doesn't exist locally (Old Backup shouldn't overwrite New Local Edit)
         const existingIdx = mergedTx.findIndex(et => et.id === t.id);
         if (existingIdx === -1) {
           mergedTx.push(t);
+          changedTx.push(t);
+        } else {
+          const existing = mergedTx[existingIdx];
+          const existingTime = existing.updatedAt ? new Date(existing.updatedAt).getTime() : 0;
+          const incomingTime = t.updatedAt ? new Date(t.updatedAt).getTime() : 0;
+
+          if (incomingTime > existingTime) {
+            mergedTx[existingIdx] = t;
+            changedTx.push(t);
+          }
         }
       });
 
       // Sort by date desc
       mergedTx.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-      setTransactions(mergedTx);
-      localStorage.setItem('snap_ledger_transactions', JSON.stringify(mergedTx));
+      // PERSISTENCE
+      if (user) {
+        // CLOUD SYNC
+        // Upsert changed categories
+        if (changedCats.length > 0) {
+          const catPayload = changedCats.map(c => ({
+            id: c.id,
+            user_id: user.id,
+            name: c.name,
+            icon: c.icon,
+            type: c.type,
+            updated_at: c.updatedAt
+          }));
+          const { error: catError } = await supabase.from('categories').upsert(catPayload);
+          if (catError) console.error('Import Category Error:', catError);
+        }
+
+        // Upsert changed transactions
+        if (changedTx.length > 0) {
+          const txPayload = changedTx.map(t => ({
+            id: t.id,
+            user_id: user.id,
+            amount: t.amount,
+            type: t.type,
+            category: t.categoryId,      // map
+            description: t.note,         // map
+            date: t.date,
+            status: t.status,
+            updated_at: t.updatedAt
+          }));
+          const { error: txError } = await supabase.from('transactions').upsert(txPayload);
+          if (txError) console.error('Import Transaction Error:', txError);
+        }
+
+        // Update local state to reflect merge immediately
+        setCustomCategories(mergedCats);
+        setTransactions(mergedTx);
+
+      } else {
+        // LOCAL SYNC
+        setCustomCategories(mergedCats);
+        localStorage.setItem('snap_ledger_categories', JSON.stringify(mergedCats));
+
+        setTransactions(mergedTx);
+        localStorage.setItem('snap_ledger_transactions', JSON.stringify(mergedTx));
+      }
 
     } catch (e) {
       console.error("Import failed", e);

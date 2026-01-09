@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, cleanup, act } from '@testing-library/react';
 import TransactionForm from './TransactionForm';
-import { LedgerContext } from '../context/LedgerContext'; // We need access to Context Provider or mock the hook directly
+// We don't need LedgerContext import as we mock the hook directly
 
 // Mock Analytics
 vi.mock('../lib/analytics', () => ({
@@ -178,5 +178,120 @@ describe('TransactionForm Component', () => {
             expect(mockDeleteTransaction).toHaveBeenCalledWith('tx-1');
         });
         expect(mockOnClose).toHaveBeenCalled();
+    });
+
+    it('Toggles transaction type', () => {
+        render(<TransactionForm onClose={mockOnClose} />);
+
+        const incomeBtn = screen.getByText('Income');
+        fireEvent.click(incomeBtn);
+
+        // Check visual feedback (optional, or just check state implies logic)
+        // We can check if categories filtered are income type?
+        // Mock categories has 'Salary' (income) and 'Food' (expense).
+        expect(screen.getByText('Salary')).toBeDefined();
+        // 'Food' might be hidden?
+        expect(screen.queryByText('Food')).toBeNull();
+    });
+
+    describe('Category Management', () => {
+        it('Opens New Category form when clicking "New"', () => {
+            render(<TransactionForm onClose={mockOnClose} />);
+            fireEvent.click(screen.getByText('New'));
+            expect(screen.getByText('New Category')).toBeDefined();
+            expect(screen.getByText('Add Category')).toBeDefined();
+        });
+
+        it('Adds a new category', async () => {
+            mockAddCategory.mockResolvedValue('new-cat-id');
+
+            render(<TransactionForm onClose={mockOnClose} />);
+
+            // Open New Category
+            fireEvent.click(screen.getByText('New'));
+
+            // Enter Name
+            fireEvent.change(screen.getByPlaceholderText('e.g. Rent'), { target: { value: 'New Stuff' } });
+
+            // Select Icon (first one)
+            const iconBtn = screen.getByText('🍔');
+            fireEvent.click(iconBtn);
+
+            // Save
+            await act(async () => {
+                fireEvent.click(screen.getByText('Add Category'));
+            });
+
+            expect(mockAddCategory).toHaveBeenCalledWith(expect.objectContaining({
+                name: 'New Stuff',
+                icon: '🍔',
+                type: 'expense'
+            }));
+        });
+
+        it('Edits an existing category', async () => {
+            // Setup: Add a custom category to mockCategories
+            const customCat = { id: 'custom-1', name: 'Custom Cat', icon: '🎸', type: 'expense' as const };
+            mockCategories.push(customCat);
+
+            render(<TransactionForm onClose={mockOnClose} />);
+
+            // Find category button and hover/click to see edit pencil
+            // Since hover via fireEvent.mouseEnter works:
+            const catBtn = screen.getByText('Custom Cat').closest('div');
+            // The structure is div > button ... and div > edit_pencil
+            // We need to trigger mouseEnter on the container div
+            if (catBtn) fireEvent.mouseEnter(catBtn);
+
+            // Find pencil (title="Edit Category")
+            const pencil = await screen.findByTitle('Edit Category');
+            fireEvent.click(pencil);
+
+            // Change Name
+            fireEvent.change(screen.getByPlaceholderText('e.g. Rent'), { target: { value: 'Updated Cat' } });
+
+            // Update
+            await act(async () => {
+                fireEvent.click(screen.getByText('Update Category'));
+            });
+
+            expect(mockUpdateCategory).toHaveBeenCalledWith('custom-1', expect.objectContaining({
+                name: 'Updated Cat',
+                icon: '🎸'
+            }));
+
+            // Cleanup
+            const idx = mockCategories.indexOf(customCat);
+            if (idx > -1) mockCategories.splice(idx, 1);
+        });
+
+        it('Deletes a custom category', async () => {
+            // Setup: Add a custom category
+            const customCat = { id: 'custom-to-delete', name: 'To Delete', icon: '🗑️', type: 'expense' as const };
+            mockCategories.push(customCat);
+
+            render(<TransactionForm onClose={mockOnClose} />);
+
+            // Enter Edit Mode
+            const catBlock = screen.getByText('To Delete').closest('div')?.parentElement;
+            if (catBlock) fireEvent.mouseEnter(catBlock);
+
+            const pencil = await screen.findByTitle('Edit Category');
+            fireEvent.click(pencil);
+
+            // Mock window.confirm
+            const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+            // Click Delete Category
+            await act(async () => {
+                fireEvent.click(screen.getByText('Delete Category'));
+            });
+
+            expect(mockDeleteCategory).toHaveBeenCalledWith('custom-to-delete');
+
+            confirmSpy.mockRestore();
+            const idx = mockCategories.indexOf(customCat);
+            if (idx > -1) mockCategories.splice(idx, 1);
+        });
     });
 });

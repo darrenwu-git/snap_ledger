@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, act, waitFor, cleanup } from '@testing-library/react';
+import React from 'react';
 import { LedgerProvider, useLedger } from './LedgerContext';
 import testBackup from '../../test_backup.json';
 import { supabase } from '../lib/supabase';
@@ -84,7 +85,7 @@ const ResultDisplay = ({ importPayload }: { importPayload?: any }) => {
       <div data-testid="cat-count">{categories.length}</div>
       <button
         data-testid="btn-import"
-        onClick={() => importData(importPayload || testBackup)}
+        onClick={() => importData(importPayload || testBackup).catch(e => console.error(e))}
       >
         Import
       </button>
@@ -440,6 +441,118 @@ describe('LedgerContext Logic Tests', () => {
 
       expect(mockDelete).toHaveBeenCalled();
       expect(mockEq).toHaveBeenCalledWith('id', 'cloud-tx-1');
+    });
+    it('Import Data: Syncs to Supabase (Cloud Mode)', async () => {
+      // Setup: User is logged in (from beforeEach)
+
+      const backupPayload = {
+        transactions: [
+          { id: 'import-tx-1', amount: 50, categoryId: 'food', date: '2026-01-01', note: 'Imported', type: 'expense', updatedAt: '2026-01-02T12:00:00Z' }
+        ],
+        categories: [
+          { id: 'import-cat-1', name: 'New Cat', icon: '🐱', type: 'expense', updatedAt: '2026-01-02T12:00:00Z' }
+        ]
+      };
+
+      render(
+        <LedgerProvider>
+          <ResultDisplay importPayload={backupPayload} />
+        </LedgerProvider>
+      );
+
+      await waitFor(() => {
+        expect(supabase.from).toHaveBeenCalled();
+      });
+
+      await act(async () => {
+        screen.getByTestId('btn-import').click();
+      });
+
+      // Verify Upsert Calls
+      expect(mockUpsert).toHaveBeenCalledTimes(2); // 1 for categories, 1 for transactions (order depends on implementation)
+      // We can't easily check the order without inspecting calls, but we know both should be called.
+      // Check Categories Upsert
+      const categoryUpsertCall = mockUpsert.mock.calls.find(call => call[0][0]?.name === 'New Cat');
+      expect(categoryUpsertCall).toBeDefined();
+      expect(categoryUpsertCall![0][0]).toMatchObject({
+        id: 'import-cat-1',
+        user_id: 'test-user-id',
+        name: 'New Cat'
+      });
+
+      // Check Transactions Upsert
+      const txUpsertCall = mockUpsert.mock.calls.find(call => call[0][0]?.description === 'Imported');
+      expect(txUpsertCall).toBeDefined();
+      expect(txUpsertCall![0][0]).toMatchObject({
+        id: 'import-tx-1',
+        user_id: 'test-user-id',
+        description: 'Imported'
+      });
+    });
+  });
+
+  describe('Edge Cases & Errors', () => {
+    it('useLedger throws error if used outside provider', () => {
+      // Suppress console.error
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+      expect(() => render(<ResultDisplay />)).toThrow('useLedger must be used within a LedgerProvider');
+      consoleSpy.mockRestore();
+    });
+
+    it('Import Data handles errors gracefully', async () => {
+      render(
+        <LedgerProvider>
+          <ResultDisplay importPayload={{ transactions: [], categories: [] }} />
+        </LedgerProvider>
+      );
+
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+      const setItemSpy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+        throw new Error('Storage Error');
+      });
+
+      await act(async () => {
+        screen.getByTestId('btn-import').click();
+      });
+
+      expect(consoleSpy).toHaveBeenCalledWith('Import failed', expect.anything());
+
+      consoleSpy.mockRestore();
+      setItemSpy.mockRestore();
+    });
+
+    it('getCategory utility works', async () => {
+      const TestComponent = () => {
+        const { getCategory, addCategory } = useLedger();
+        const [foundName, setFoundName] = React.useState('Init');
+        const [createdId, setCreatedId] = React.useState<string | null>(null);
+
+        React.useEffect(() => {
+          addCategory({ name: 'FoundIt', icon: 'F', type: 'expense' }).then(id => {
+            setCreatedId(id);
+          });
+        }, []);
+
+        // Reactive check
+        React.useEffect(() => {
+          if (createdId) {
+            const cat = getCategory(createdId);
+            setFoundName(cat?.name || 'Not Found');
+          }
+        }, [createdId, getCategory]);
+
+        return <div data-testid="cat-name">{foundName}</div>;
+      };
+
+      render(
+        <LedgerProvider>
+          <TestComponent />
+        </LedgerProvider>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('cat-name').textContent).toBe('FoundIt');
+      });
     });
   });
 });

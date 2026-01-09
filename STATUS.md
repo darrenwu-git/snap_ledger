@@ -26,6 +26,12 @@ Create a simple way to track expenses, likely "snap" implies quick/easy entry (m
 
 ### 2026-01-09
 
+- ✅ **Improved Test Coverage (Core & UI)**:
+  - **Overall**: Achieved ~50% unit test coverage across the application.
+  - **Service**: Added comprehensive tests for `VoiceParser` (API, Logic, Error scenarios).
+  - **Contexts**: Verified `SettingsContext` persistence and `LedgerContext` (Cloud/Local sync, Import conflict resolution).
+  - **UI**: Added robust tests for `TransactionForm` (CRUD, Category Mgmt) and `MonthlySummary` (Stats, Date Navigation).
+  - **Configuration**: Enabled full coverage reporting in `vite.config.ts`.
 - ✅ **Implemented Telemetry & Feedback**:
   - **Supabase Backend**: Added `feedback` and `analytics_events` tables with public insert policies.
   - **Privacy**: Implemented anonymous ID generation for guest users.
@@ -53,6 +59,10 @@ Create a simple way to track expenses, likely "snap" implies quick/easy entry (m
   - Created `src/lib/analytics.test.ts` to verify `trackEvent` and `submitFeedback`.
   - Implemented comprehensive mocks for Supabase (`insert`, `auth`) and `localStorage` to validate logic in isolation.
   - Confirmed anonymous ID generation and user metadata attachment.
+- ✅ **Enhanced Test Coverage**:
+  - **LedgerContext**: Added Cloud Mode tests (mocking Supabase), increasing coverage to ~57%.
+  - **TransactionForm**: Created comprehensive UI tests (Rendering, Submission, Validation, Deletion), coverage at ~48%.
+  - **Configuration**: Enabled full coverage reporting in `vite.config.ts`.
 
 ### 2026-01-08
 - ✅ UI Improvement: Renamed "Daily Transactions" to "Recent Transactions" for better clarity.

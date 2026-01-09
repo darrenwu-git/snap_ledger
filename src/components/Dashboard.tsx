@@ -227,13 +227,15 @@ const Dashboard: React.FC = () => {
           <span style={{ fontSize: '1.4rem', lineHeight: 1 }}>⚠️</span>
           <div className="flex-col" style={{ flex: 1, gap: '4px' }}>
             <strong style={{ color: '#fbbf24', fontSize: '0.95rem' }}>Guest Mode Active</strong>
-            <p style={{ margin: 0, fontSize: '0.9rem', color: 'hsl(var(--color-text-main))', lineHeight: 1.5 }}>
-              Transactions are saved <strong style={{ color: 'hsl(var(--color-text-main))' }}>locally on this device</strong>.
-              <br />
-              <span style={{ color: 'hsl(var(--color-text-muted))', fontSize: '0.85rem' }}>
-                If you clear your cache or change devices, this data will be lost. Sign in to sync permanently.
-              </span>
-            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <p style={{ margin: 0, fontSize: '0.9rem', color: 'hsl(var(--color-text-main))', lineHeight: 1.5 }}>
+                Transactions are saved <strong style={{ color: 'hsl(var(--color-text-main))' }}>locally on this device</strong>.
+              </p>
+              <p style={{ margin: 0, fontSize: '0.85rem', color: 'hsl(var(--color-text-muted))', lineHeight: 1.4 }}>
+                If you clear your cache or change devices, this data will be lost.
+                Sign in to sync, or use <strong>Settings &gt; Backup</strong> to save manually.
+              </p>
+            </div>
           </div>
           <button
             onClick={() => setShowGuestWarning(false)}

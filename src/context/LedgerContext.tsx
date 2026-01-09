@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { DEFAULT_CATEGORIES } from '../types';
-import type { Transaction, Category } from '../types';
+import type { Transaction, Category, BackupData } from '../types';
 import { useAuth } from './AuthContext';
 import { supabase } from '../lib/supabase';
 
@@ -13,6 +13,7 @@ interface LedgerContextType {
   addCategory: (category: Omit<Category, 'id'>) => Promise<string>;
   updateCategory: (id: string, category: Omit<Category, 'id'>) => Promise<void>;
   deleteCategory: (id: string) => Promise<void>;
+  importData: (data: BackupData) => Promise<void>;
   getCategory: (id: string) => Category | undefined;
 }
 
@@ -273,12 +274,88 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   };
 
+  // IMPORT DATA (Guest Mode Only)
+  const importData = async (data: BackupData) => {
+    if (user) {
+      throw new Error("Import is currently supported only in Guest Mode.");
+    }
+
+    try {
+      // 1. Merge Categories (Local Wins)
+      const mergedCats = [...customCategories];
+      const incomingCats = data.categories || [];
+
+      incomingCats.forEach(c => {
+        // Only add if it doesn't exist locally
+        const existingIdx = mergedCats.findIndex(ec => ec.id === c.id);
+        if (existingIdx === -1) {
+          mergedCats.push(c);
+        }
+      });
+
+      setCustomCategories(mergedCats);
+      localStorage.setItem('snap_ledger_categories', JSON.stringify(mergedCats));
+
+      // 2. Merge Transactions (Local Wins)
+      const mergedTx = [...transactions];
+      const incomingTx = data.transactions || [];
+
+      // Auto-Create Missing Categories from Transactions
+      const allCategoryIds = new Set([
+        ...DEFAULT_CATEGORIES.map(c => c.id),
+        ...mergedCats.map(c => c.id)
+      ]);
+
+      incomingTx.forEach(t => {
+        if (t.categoryId && !allCategoryIds.has(t.categoryId)) {
+          // Detected a category used in transaction but not defined
+          // We create it automatically to prevent "Uncategorized" display
+          const newId = t.categoryId;
+          // Simple heuristic: Capitalize ID for name
+          const newName = newId.charAt(0).toUpperCase() + newId.slice(1);
+
+          const newCat: Category = {
+            id: newId,
+            name: newName,
+            icon: '🏷️', // Default icon for imported orphans
+            type: t.type || 'expense'
+          };
+
+          mergedCats.push(newCat);
+          allCategoryIds.add(newId); // Add to set to avoid duplicates
+        }
+      });
+
+      // Re-save categories if we added new ones from transactions
+      setCustomCategories(mergedCats);
+      localStorage.setItem('snap_ledger_categories', JSON.stringify(mergedCats));
+
+      incomingTx.forEach(t => {
+        // Only add if it doesn't exist locally (Old Backup shouldn't overwrite New Local Edit)
+        const existingIdx = mergedTx.findIndex(et => et.id === t.id);
+        if (existingIdx === -1) {
+          mergedTx.push(t);
+        }
+      });
+
+      // Sort by date desc
+      mergedTx.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+      setTransactions(mergedTx);
+      localStorage.setItem('snap_ledger_transactions', JSON.stringify(mergedTx));
+
+    } catch (e) {
+      console.error("Import failed", e);
+      throw new Error("Failed to process backup data.");
+    }
+  };
+
   const getCategory = (id: string) => {
     return categories.find((c) => c.id === id);
   };
 
   return (
-    <LedgerContext.Provider value={{ transactions, categories, addTransaction, updateTransaction, deleteTransaction, getCategory, addCategory, updateCategory, deleteCategory }}>
+    <LedgerContext.Provider value={{ transactions, categories, addTransaction, updateTransaction, deleteTransaction, getCategory, addCategory, updateCategory, deleteCategory, importData }}>
       {children}
     </LedgerContext.Provider>
   );

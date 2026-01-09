@@ -29,11 +29,10 @@ export const LoginButton: React.FC<LoginButtonProps> = ({ onOpenSettings }) => {
     };
   }, [isOpen]);
 
+  // Invite Input handles...
   const handleInviteSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Use environment variable for the code
-    const VALID_CODE = import.meta.env.VITE_INVITE_CODE || 'snap2026'; // Fallback if env not set
-
+    const VALID_CODE = import.meta.env.VITE_INVITE_CODE || 'snap2026'; // Fallback
     if (inviteCode.toLowerCase().trim() === VALID_CODE) {
       signInWithGoogle();
       setShowInviteInput(false);
@@ -41,136 +40,13 @@ export const LoginButton: React.FC<LoginButtonProps> = ({ onOpenSettings }) => {
       setError(false);
     } else {
       setError(true);
-      // Small shake effect or just set error state
       setTimeout(() => setError(false), 2000);
     }
   };
 
-  if (user) {
-    return (
-      <div className="user-menu-container" style={{ position: 'relative' }}>
-        <div 
-          onClick={() => setIsOpen(!isOpen)}
-          className="flex-center" 
-          style={{ 
-            background: 'rgba(255, 255, 255, 0.2)', 
-            backdropFilter: 'blur(8px)',
-            padding: '4px',
-            borderRadius: '50%',
-            border: '1px solid rgba(255, 255, 255, 0.3)',
-            cursor: 'pointer',
-            width: '42px',
-            height: '42px'
-          }}
-        >
-          {user.user_metadata.avatar_url ? (
-              <img 
-                src={user.user_metadata.avatar_url} 
-                alt="User" 
-              style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }}
-              />
-          ) : (
-              <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#4285F4', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {user.email?.charAt(0).toUpperCase()}
-              </div>
-          )}
-        </div>
-
-        {isOpen && (
-          <div style={{
-            position: 'absolute',
-            top: '48px',
-            right: 0,
-            background: 'hsl(var(--color-surface))',
-            border: '1px solid hsl(var(--color-border))',
-            borderRadius: '12px',
-            padding: '8px',
-            boxShadow: 'var(--shadow-lg)',
-            zIndex: 100,
-            minWidth: '180px'
-          }}>
-
-
-            {onOpenSettings && (
-              <button
-                onClick={() => {
-                  setIsOpen(false);
-                  onOpenSettings();
-                }}
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  background: 'transparent',
-                  border: 'none',
-                  color: 'hsl(var(--color-text-main))',
-                  cursor: 'pointer',
-                  borderRadius: '8px',
-                  fontSize: '0.9rem',
-                  textAlign: 'left'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'hsl(var(--color-bg-subtle))'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-              >
-                <span>⚙️</span>
-                Settings
-              </button>
-            )}
-
-            <button
-              onClick={() => {
-                setIsOpen(false);
-                signOut();
-              }}
-              style={{
-                width: '100%',
-                padding: '8px 12px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                background: 'transparent',
-                border: 'none',
-                color: 'hsl(var(--color-text-main))',
-                cursor: 'pointer',
-                borderRadius: '8px',
-                fontSize: '0.9rem',
-                textAlign: 'left'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'hsl(var(--color-bg-subtle))'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.7 }}>
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                <polyline points="16 17 21 12 16 7"></polyline>
-                <line x1="21" y1="12" x2="9" y2="12"></line>
-              </svg>
-              Sign Out
-            </button>
-            <div style={{
-              borderTop: '1px solid hsl(var(--color-border))',
-              marginTop: '4px',
-              paddingTop: '8px',
-              paddingBottom: '4px',
-              textAlign: 'center',
-              fontSize: '0.7rem',
-              color: 'hsl(var(--color-text-muted))',
-              letterSpacing: '0.05em',
-              opacity: 0.7
-            }}>
-              v{pkg.version}
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-
-
   return (
-    <div className="flex items-center gap-2" style={{ position: 'relative' }}>
+    <div className="user-menu-container" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+      {/* Invite Input Overlay */}
       {showInviteInput && (
         <div style={{
           position: 'absolute',
@@ -237,44 +113,173 @@ export const LoginButton: React.FC<LoginButtonProps> = ({ onOpenSettings }) => {
         </div>
       )}
 
-      <button
-        onClick={() => setShowInviteInput(!showInviteInput)}
-        title="Access"
-        style={{
-          background: 'none',
-          border: 'none',
-          color: 'hsl(var(--color-text-muted))',
-          cursor: 'pointer',
-          padding: '8px',
+      {/* Main Trigger (Avatar or User Icon) */}
+      <div
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex-center" 
+        title={user ? user.email || 'User' : 'Guest Menu'}
+        style={{ 
+          background: user ? 'rgba(255, 255, 255, 0.2)' : 'transparent',
+          backdropFilter: user ? 'blur(8px)' : 'none',
+          padding: user ? '4px' : '8px',
           borderRadius: '50%',
+          border: user ? '1px solid rgba(255, 255, 255, 0.3)' : 'none',
+          cursor: 'pointer',
+          width: user ? '42px' : 'auto',
+          height: user ? '42px' : 'auto',
+          transition: 'background 0.2s',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
-          opacity: 0.5,
-          transition: 'all 0.2s',
-          transform: showInviteInput ? 'rotate(45deg)' : 'none'
+          justifyContent: 'center'
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.opacity = '1';
-          e.currentTarget.style.background = 'hsl(var(--color-bg-subtle))';
+          if (!user) e.currentTarget.style.background = 'hsl(var(--color-bg-subtle))';
         }}
         onMouseLeave={(e) => {
-          if (!showInviteInput) {
-            e.currentTarget.style.opacity = '0.5';
-            e.currentTarget.style.background = 'transparent';
-          }
+          if (!user) e.currentTarget.style.background = 'transparent';
         }}
       >
-        {!showInviteInput ? (
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
-            <polyline points="10 17 15 12 10 7" />
-            <line x1="15" y1="12" x2="3" y2="12" />
-          </svg>
+        {user ? (
+          user.user_metadata.avatar_url ? (
+            <img
+              src={user.user_metadata.avatar_url}
+              alt="User" 
+              style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }}
+            />
+          ) : (
+              <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#4285F4', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {user.email?.charAt(0).toUpperCase()}
+              </div>
+          )
         ) : (
-          <span style={{ fontSize: '1.2rem', lineHeight: 1 }}>+</span>
+          /* Guest Icon (Simple User) */
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.7 }}>
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
+          </svg>
         )}
-      </button>
+      </div>
+
+      {/* Dropdown Menu */}
+      {isOpen && (
+        <div style={{
+          position: 'absolute',
+          top: '52px',
+          right: 0,
+          background: 'hsl(var(--color-surface))',
+          border: '1px solid hsl(var(--color-border))',
+          borderRadius: '12px',
+          padding: '8px',
+          boxShadow: 'var(--shadow-lg)',
+          zIndex: 100,
+          minWidth: '180px',
+          animation: 'fade-in 0.1s ease-out'
+        }}>
+          {onOpenSettings && (
+            <button
+              onClick={() => {
+                setIsOpen(false);
+                onOpenSettings();
+              }}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                background: 'transparent',
+                border: 'none',
+                color: 'hsl(var(--color-text-main))',
+                cursor: 'pointer',
+                borderRadius: '8px',
+                fontSize: '0.9rem',
+                textAlign: 'left'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'hsl(var(--color-bg-subtle))'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+            >
+              <span>⚙️</span>
+              Settings
+            </button>
+          )}
+
+          {user ? (
+            <button
+              onClick={() => {
+                setIsOpen(false);
+                signOut();
+              }}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                background: 'transparent',
+                border: 'none',
+                color: 'hsl(var(--color-text-main))',
+                cursor: 'pointer',
+                borderRadius: '8px',
+                fontSize: '0.9rem',
+                textAlign: 'left'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'hsl(var(--color-bg-subtle))'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.7 }}>
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+              </svg>
+              Sign Out
+            </button>
+          ) : (
+            <button
+              onClick={() => {
+                setIsOpen(false);
+                setShowInviteInput(true);
+              }}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                background: 'transparent',
+                border: 'none',
+                color: 'hsl(var(--color-text-main))',
+                cursor: 'pointer',
+                borderRadius: '8px',
+                fontSize: '0.9rem',
+                textAlign: 'left'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'hsl(var(--color-bg-subtle))'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.7 }}>
+                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                <polyline points="10 17 15 12 10 7" />
+                <line x1="15" y1="12" x2="3" y2="12" />
+              </svg>
+              Access Cloud Mode
+            </button>
+          )}
+
+          <div style={{
+            borderTop: '1px solid hsl(var(--color-border))',
+            marginTop: '4px',
+            paddingTop: '8px',
+            paddingBottom: '4px',
+            textAlign: 'center',
+            fontSize: '0.7rem',
+            color: 'hsl(var(--color-text-muted))',
+            letterSpacing: '0.05em',
+            opacity: 0.7
+          }}>
+            v{pkg.version}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

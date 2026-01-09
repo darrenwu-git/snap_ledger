@@ -28,3 +28,10 @@ export const DEFAULT_CATEGORIES: Category[] = [
   { id: 'bonus', name: 'Bonus', icon: '🎁', type: 'income' },
   { id: 'investment', name: 'Invest', icon: '📈', type: 'income' },
 ];
+
+export interface BackupData {
+  version: number;
+  exportedAt: string;
+  transactions: Transaction[];
+  categories: Category[]; // Custom categories only
+}

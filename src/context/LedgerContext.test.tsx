@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, act, waitFor, cleanup } from '@testing-library/react';
 import React from 'react';
 import { LedgerProvider, useLedger } from './LedgerContext';
-import testBackup from '../../test_backup.json';
+import testBackup from '../tests/fixtures/test_backup.json';
 import { supabase } from '../lib/supabase';
 
 // Mock Supabase

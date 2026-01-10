@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, cleanup } from '@testing-library/react';
-import React from 'react';
+
 import { LedgerProvider, useLedger } from './LedgerContext';
-import { DEFAULT_CATEGORIES } from '../types';
+
 
 // Mock Supabase
 const mockSelect = vi.fn();
@@ -102,7 +102,7 @@ describe('LedgerContext Migration Tests', () => {
       });
 
       // Verify 'My Food' name is preserved (not overwritten by default 'Food')
-      const { categories } = JSON.parse(localStorage.getItem('snap_ledger_categories') || '{}');
+
       // Wait, we need to inspect the state or local storage more carefully
       // The component renders IDs.
       // Let's check local storage directly

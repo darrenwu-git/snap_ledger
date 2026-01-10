@@ -44,7 +44,7 @@ Telemetry is handled by `src/lib/analytics.ts`. Events are stored in Supabase ta
 - **Properties**:
   - `type`: `'bug' | 'feature' | 'like' | 'other'`
   - `message`: Content content
-  - `metadata`: `{ version: '0.2.0', userAgent: ... }`
+  - `metadata`: `{ version: '0.2.1', userAgent: ... }`
 
 ## Data Analysis Notes
 - **Voice Success Rate**: Compare count of `transaction_created` (source: `ai_voice`) vs Total Voice Attempts (metric to be added if needed, currently we track successful creates).

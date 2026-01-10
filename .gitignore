@@ -25,3 +25,6 @@ dist-ssr
 .env
 .env.production
 coverage/
+
+.agent/
+STATUS.md

@@ -44,7 +44,7 @@ Object.defineProperty(window, 'localStorage', {
 });
 
 // Mock Crypto
-Object.defineProperty(global, 'crypto', {
+Object.defineProperty(globalThis, 'crypto', {
   value: {
     randomUUID: () => 'test-anon-id'
   }

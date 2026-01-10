@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { useSettings } from '../context/SettingsContext';
 import { useLedger } from '../context/LedgerContext';
-import { useAuth } from '../context/AuthContext';
+
 
 import type { BackupData } from '../types';
 import pkg from '../../package.json';
@@ -13,7 +13,7 @@ interface SettingsModalProps {
 const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
   const { autoCreateCategories, setAutoCreateCategories } = useSettings();
   const { transactions, categories, importData } = useLedger();
-  const { user } = useAuth();
+
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [status, setStatus] = useState<{ type: 'idle' | 'success' | 'error' | 'loading', msg: string }>({ type: 'idle', msg: '' });

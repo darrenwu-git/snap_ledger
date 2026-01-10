@@ -55,6 +55,12 @@ Create a simple way to track expenses, likely "snap" implies quick/easy entry (m
   - Replaced native `window.confirm` with a custom in-UI confirmation to prevent auto-dismissal.
   - Improved UX with clear "Confirm / Cancel" options.
 
+### 2026-01-10
+- ✅ **Telemetry & Security**:
+  - Implemented rate limiting and character limits for Feedback.
+  - Added missing telemetry triggers (`app_opened`, `category_created`).
+  - Created `SUPABASE_FEEDBACK_SECURITY.sql` migration.
+
 - ✅ **Unit Tests (Telemetry)**:
   - Created `src/lib/analytics.test.ts` to verify `trackEvent` and `submitFeedback`.
   - Implemented comprehensive mocks for Supabase (`insert`, `auth`) and `localStorage` to validate logic in isolation.

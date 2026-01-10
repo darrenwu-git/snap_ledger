@@ -56,6 +56,8 @@ Create a simple way to track expenses, likely "snap" implies quick/easy entry (m
   - Improved UX with clear "Confirm / Cancel" options.
 
 ### 2026-01-10
+- ✅ **Released v0.2.0**
+
 - ✅ **Telemetry & Security**:
   - Implemented rate limiting and character limits for Feedback.
   - Added missing telemetry triggers (`app_opened`, `category_created`).
@@ -64,6 +66,14 @@ Create a simple way to track expenses, likely "snap" implies quick/easy entry (m
 - ✅ **Fixed AI Auto-Create Categories (Guest Mode)**:
   - Enabled AI Auto-Category creation for Guest Mode (previously restricted to logged-in users).
   - Verified via regression testing (47/47 tests passed).
+- ✅ **Refined Category Telemetry**:
+  - Implemented `category_updated` event with detailed diff tracking (old vs new values).
+  - Standardized property names (using `category_id` across events).
+  - Fixed a Critical Bug where editing a newly created category failed to emit telemetry under specific conditions ("Create-then-Edit" flow).
+- ✅ **Enable Mutable Default Categories**:
+  - Migrated hardcoded defaults to deterministic UUIDs for Cloud Sync compatibility.
+  - Merged defaults into mutable state, allowing users to rename/icon-swap "Food", "Transport", etc.
+  - Updated `LedgerContext` to handle migration seamlessly.
 
 - ✅ **Unit Tests (Telemetry)**:
   - Created `src/lib/analytics.test.ts` to verify `trackEvent` and `submitFeedback`.

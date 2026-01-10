@@ -1,6 +1,6 @@
 # Snap Ledger
 
-![Version](https://img.shields.io/badge/version-v0.1.0-blue)
+![Version](https://img.shields.io/badge/version-v0.2.0-blue)
 ![License](https://img.shields.io/badge/license-Private-red)
 ![Status](https://img.shields.io/badge/status-active-success)
 

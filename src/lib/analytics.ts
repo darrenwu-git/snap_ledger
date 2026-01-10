@@ -61,7 +61,7 @@ export const submitFeedback = async (
     contact_email: email,
     metadata: {
       userAgent: navigator.userAgent,
-      version: '0.1.0' // TODO: Import from package.json
+      version: '0.2.0' // TODO: Import from package.json
     }
   });
 };

@@ -7,7 +7,7 @@ COPY package.json ./
 
 # Install ONLY production dependencies
 # Network timeout increased for reliability
-RUN npm install --omit=dev --foreground-scripts --network-timeout 100000
+RUN npm install --omit=dev --foreground-scripts
 
 # Copy application code
 COPY server.js ./
@@ -19,4 +19,5 @@ ENV NODE_ENV=production
 
 EXPOSE 8000
 
-CMD ["node", "server.js"]
+# Use shell form to ensure PORT environment variable is strictly honored as per guide
+CMD sh -c "node server.js"

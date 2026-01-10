@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { trackEvent } from '../lib/analytics';
 import { useLedger } from '../context/LedgerContext';
-import { DEFAULT_CATEGORIES } from '../types';
+
 import type { Transaction, TransactionType, Category } from '../types';
 
 const PRESET_ICONS = [
@@ -95,11 +95,15 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onClose, initialData,
     }
   };
 
+  // Store original values for diffing
+  const [originalCatValues, setOriginalCatValues] = useState<{ name: string, icon: string } | null>(null);
+
   const handleEditCategory = (e: React.MouseEvent, cat: Category) => {
     e.stopPropagation();
     setEditingCategoryId(cat.id);
     setNewCatName(cat.name);
     setNewCatIcon(cat.icon);
+    setOriginalCatValues({ name: cat.name, icon: cat.icon });
     setIsAddingCategory(true);
     setCategoryId('');
     setError(null);
@@ -113,33 +117,53 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onClose, initialData,
 
     try {
       if (editingCategoryId) {
+        // Update existing category
         await updateCategory(editingCategoryId, {
           name: newCatName,
           icon: newCatIcon,
           type: type
         });
+
+        // Track Update
+        const changes: any = {};
+        if (originalCatValues) {
+          if (originalCatValues.name !== newCatName) changes.name = { old: originalCatValues.name, new: newCatName };
+          if (originalCatValues.icon !== newCatIcon) changes.icon = { old: originalCatValues.icon, new: newCatIcon };
+        }
+
+        trackEvent('category_updated', {
+          category_id: editingCategoryId,
+          name: newCatName,
+          icon: newCatIcon,
+          type: type,
+          source: 'manual',
+          changes: changes
+        });
+
         setEditingCategoryId(null);
       } else {
+        // Create new category
         const newId = await addCategory({
           name: newCatName,
           icon: newCatIcon,
           type: type
         });
         setCategoryId(newId);
+
+        // Track Creation
+        trackEvent('category_created', {
+          category_id: newId,
+          name: newCatName,
+          icon: newCatIcon,
+          type: type,
+          source: 'manual'
+        });
       }
 
       setIsAddingCategory(false);
       setNewCatName('');
       setNewCatIcon('');
       setError(null);
-
-      // Track Event
-      trackEvent('category_created', {
-        name: newCatName,
-        source: 'manual',
-        icon: newCatIcon,
-        type: type
-      });
 
     } catch (e: any) {
       setError(e.message || 'Failed to save category');
@@ -156,6 +180,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onClose, initialData,
       if (editingCategoryId === id) {
         setIsAddingCategory(false);
         setEditingCategoryId(null);
+        setOriginalCatValues(null);
       }
     } catch (e: any) {
       console.error(e);
@@ -163,7 +188,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onClose, initialData,
     }
   };
 
-  const isCustomCategory = (id: string) => !DEFAULT_CATEGORIES.some(c => c.id === id);
+
 
   const filteredCategories = categories.filter((c) => c.type === type);
 
@@ -232,6 +257,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onClose, initialData,
                   setEditingCategoryId(null);
                   setNewCatName('');
                   setNewCatIcon('');
+                  setOriginalCatValues(null);
                 }}
                 style={{ fontSize: '0.8rem', color: 'hsl(var(--color-text-muted))' }}
               >
@@ -359,7 +385,8 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onClose, initialData,
                     <div style={{ fontSize: '0.75rem', color: categoryId === cat.id ? 'white' : 'hsl(var(--color-text-muted))', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>{cat.name}</div>
                   </button>
 
-                  {isCustomCategory(cat.id) && (hoveredCategoryId === cat.id || categoryId === cat.id) && (
+                  {/* Edit Button - Always Visible for All Categories now */}
+                  {(hoveredCategoryId === cat.id || categoryId === cat.id) && (
                     <div
                       onClick={(e) => handleEditCategory(e, cat)}
                       style={{
@@ -396,6 +423,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onClose, initialData,
                     setEditingCategoryId(null);
                     setNewCatName('');
                     setNewCatIcon('');
+                    setOriginalCatValues(null);
                     setIsAddingCategory(true);
                   }}
                   className="flex-col flex-center"

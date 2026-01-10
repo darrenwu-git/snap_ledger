@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react';
 import { useSettings } from '../context/SettingsContext';
 import { useLedger } from '../context/LedgerContext';
 import { useAuth } from '../context/AuthContext';
-import { DEFAULT_CATEGORIES } from '../types';
+
 import type { BackupData } from '../types';
 import pkg from '../../package.json';
 
@@ -18,18 +18,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [status, setStatus] = useState<{ type: 'idle' | 'success' | 'error' | 'loading', msg: string }>({ type: 'idle', msg: '' });
 
-  // Filter custom categories for export (exclude defaults)
-  const getCustomCategories = () => {
-    return categories.filter(c => !DEFAULT_CATEGORIES.some(d => d.id === c.id));
-  };
-
   const handleExport = () => {
     try {
       const backup: BackupData = {
         version: 1,
         exportedAt: new Date().toISOString(),
         transactions: transactions,
-        categories: getCustomCategories()
+        categories: categories
       };
 
       const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });

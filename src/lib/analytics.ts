@@ -16,6 +16,7 @@ type EventName =
   | 'app_opened'
   | 'transaction_created'
   | 'category_created'
+  | 'category_updated'
   | 'ai_auto_create_toggled'
   | 'feedback_submitted'
   | 'data_exported'

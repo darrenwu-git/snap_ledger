@@ -227,6 +227,16 @@ describe('TransactionForm Component', () => {
                 icon: '🍔',
                 type: 'expense'
             }));
+
+            // Verify Telemetry
+            const { trackEvent } = await import('../lib/analytics');
+            expect(trackEvent).toHaveBeenCalledWith('category_created', expect.objectContaining({
+                category_id: 'new-cat-id',
+                name: 'New Stuff',
+                icon: '🍔',
+                type: 'expense',
+                source: 'manual'
+            }));
         });
 
         it('Edits an existing category', async () => {
@@ -260,8 +270,79 @@ describe('TransactionForm Component', () => {
                 icon: '🎸'
             }));
 
+            // Verify Telemetry
+            const { trackEvent } = await import('../lib/analytics');
+            expect(trackEvent).toHaveBeenCalledWith('category_updated', expect.objectContaining({
+                category_id: 'custom-1',
+                name: 'Updated Cat',
+                icon: '🎸',
+                source: 'manual',
+                changes: expect.objectContaining({
+                    name: { old: 'Custom Cat', new: 'Updated Cat' }
+                    // Icon didn't change in this test step, so it shouldn't be in changes
+                })
+            }));
+
             // Cleanup
             const idx = mockCategories.indexOf(customCat);
+            if (idx > -1) mockCategories.splice(idx, 1);
+        });
+
+        it('Edits a newly created manual category', async () => {
+            mockAddCategory.mockResolvedValue('new-cat-id');
+            const newCat = { id: 'new-cat-id', name: 'New Stuff', icon: '🍔', type: 'expense' as const };
+            // We need to push this to mockCategories AFTER creation so the edit logic can find it
+
+            const { rerender } = render(<TransactionForm onClose={mockOnClose} />);
+
+            // 1. Create New
+            fireEvent.click(screen.getByText('New'));
+            fireEvent.change(screen.getByPlaceholderText('e.g. Rent'), { target: { value: 'New Stuff' } });
+            fireEvent.click(screen.getByText('🍔'));
+
+            await act(async () => {
+                fireEvent.click(screen.getByText('Add Category'));
+            });
+
+            expect(mockAddCategory).toHaveBeenCalled();
+
+            // Manually add to mock store because the component won't auto-update our mock import
+            mockCategories.push(newCat);
+
+            // Force re-render so it sees the new category in the list
+            rerender(<TransactionForm onClose={mockOnClose} />);
+
+            // 2. Now Edit that same new category
+            const catBtn = await screen.findByText('New Stuff'); // Should appear now
+            const catContainer = catBtn.closest('div')?.parentElement;
+            if (catContainer) fireEvent.mouseEnter(catContainer);
+
+
+            const pencil = await screen.findByTitle('Edit Category');
+            fireEvent.click(pencil);
+
+            // Change Icon
+            fireEvent.click(screen.getByText('🚗'));
+
+            await act(async () => {
+                fireEvent.click(screen.getByText('Update Category'));
+            });
+
+            // Telemetry Check
+            const { trackEvent } = await import('../lib/analytics');
+            const calls = (trackEvent as any).mock.calls;
+            const updateCall = calls.find((c: any) => c[0] === 'category_updated');
+
+            expect(updateCall).toBeDefined();
+            expect(updateCall[1]).toMatchObject({
+                category_id: 'new-cat-id',
+                changes: {
+                    icon: { old: '🍔', new: '🚗' }
+                }
+            });
+
+            // Cleanup
+            const idx = mockCategories.indexOf(newCat);
             if (idx > -1) mockCategories.splice(idx, 1);
         });
 

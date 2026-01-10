@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { DEFAULT_CATEGORIES } from '../types';
+import { DEFAULT_CATEGORIES, LEGACY_CATEGORY_ID_MAP } from '../types';
 import type { Transaction, Category, BackupData } from '../types';
 import { useAuth } from './AuthContext';
 import { supabase } from '../lib/supabase';
@@ -24,7 +24,8 @@ const mapFromDb = (row: any): Transaction => ({
   id: row.id,
   amount: Number(row.amount),
   type: row.type || 'expense',
-  categoryId: row.category, // DB: category -> App: categoryId
+  // Map legacy IDs to UUIDs if present
+  categoryId: LEGACY_CATEGORY_ID_MAP[row.category] || row.category, 
   date: row.date,
   note: row.description,    // DB: description -> App: note
   status: row.status || 'completed',
@@ -34,11 +35,12 @@ const mapFromDb = (row: any): Transaction => ({
 export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [customCategories, setCustomCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
 
-  const categories = [...DEFAULT_CATEGORIES, ...customCategories];
+  // UNIFIED CATEGORY STATE
+  // We initialize with what we have (empty), then populate.
+  // "categories" is now just the state, but we ensure defaults are seeded on fetch.
 
-  // FETCH Transactions
   // FETCH Data
   useEffect(() => {
     if (user) {
@@ -61,16 +63,61 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           .from('categories')
           .select('*');
 
+
         if (catError) {
           console.warn('Error fetching categories (table might not exist yet):', catError);
-        } else if (catData) {
-          setCustomCategories(catData.map((c: any) => ({
-            id: c.id,
-            name: c.name,
-            icon: c.icon,
-            type: c.type,
-            updatedAt: c.updated_at
-          })));
+        } else {
+          // Check if we need to seed defaults
+          // If no categories exist (or only some?), we should ensure defaults are present
+          // For now: if DB is empty, seed defaults.
+          // Better: Check if defaults are missing and add them?
+          // Simplest migration: If catData is empty, we assume it's a fresh user (or migration needed).
+          // BUT, we might have partial data.
+          // Strategy: Load what's in DB.
+          // If the DB has ZERO categories, we insert DEFAULT_CATEGORIES.
+
+          let loadedCategories: Category[] = [];
+
+          if (catData) {
+            loadedCategories = catData.map((c: any) => ({
+              id: c.id,
+              name: c.name,
+              icon: c.icon,
+              type: c.type,
+              updatedAt: c.updated_at
+            }));
+          }
+
+          // Check if we need to seed defaults (Merge Strategy)
+          // We assume "Default Categories" should always exist for all users.
+          // If they are missing (new user or deleted), we restore them.
+          const existingIds = new Set(loadedCategories.map(c => c.id));
+          const missingDefaults = DEFAULT_CATEGORIES.filter(d => !existingIds.has(d.id));
+
+          if (missingDefaults.length > 0) {
+            const defaultsToAdd = missingDefaults.map(d => ({
+              ...d,
+              updatedAt: new Date().toISOString()
+            }));
+
+            // Optimistically update local state
+            loadedCategories = [...loadedCategories, ...defaultsToAdd];
+
+            // Fire-and-forget sync to DB
+            const payload = defaultsToAdd.map(c => ({
+              id: c.id,
+              user_id: user.id,
+              name: c.name,
+              icon: c.icon,
+              type: c.type,
+              updated_at: c.updatedAt
+            }));
+
+            const { error } = await supabase.from('categories').upsert(payload);
+            if (error) console.error('Failed to seed default categories:', error);
+          }
+
+          setCategories(loadedCategories);
         }
       };
       
@@ -83,13 +130,22 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           const parsed = JSON.parse(savedTrans);
           const migrated = parsed.map((t: any) => ({
             ...t,
+            // Migrate Category ID if needed
+            categoryId: LEGACY_CATEGORY_ID_MAP[t.categoryId] || t.categoryId,
             status: t.status || 'completed'
           }));
-          // eslint-disable-next-line react-hooks/set-state-in-effect
           setTransactions(migrated);
+
+          // Save migrated transactions back if there were changes (implied by just doing it)
+          // To be safe/clean, we could check for changes, but writing back is cheap here.
+          // Wait, if we write back, we should stringify.
+          // Let's just do it to ensure consistency.
+          const hasLegacyIds = parsed.some((t: any) => LEGACY_CATEGORY_ID_MAP[t.categoryId]);
+          if (hasLegacyIds) {
+            localStorage.setItem('snap_ledger_transactions', JSON.stringify(migrated));
+          }
         } catch (e) {
           console.error("Failed to parse transactions", e);
-          // eslint-disable-next-line react-hooks/set-state-in-effect
           setTransactions([]);
         }
       } else {
@@ -98,14 +154,50 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
       const savedCats = localStorage.getItem('snap_ledger_categories');
       if (savedCats) {
+        let parsed: any[] = [];
+
         try {
-          setCustomCategories(JSON.parse(savedCats));
+          const raw = JSON.parse(savedCats);
+          if (Array.isArray(raw)) {
+            parsed = raw;
+          }
         } catch (e) {
-          console.error("Failed to parse categories", e);
-          setCustomCategories([]);
+          console.error("Failed to parse categories JSON", e);
+        }
+
+        if (parsed.length > 0) {
+          // Filter out malformed entries to avoid crashes
+          const validParsed = parsed.filter((c: any) => c && typeof c.id === 'string');
+
+          // MIGRATION: Check if we need to merge defaults
+          const existingIds = new Set(validParsed.map((c: any) => c.id));
+          const missingDefaults = DEFAULT_CATEGORIES.filter(d => !existingIds.has(d.id));
+
+          if (missingDefaults.length > 0) {
+            const defaultsToAdd = missingDefaults.map(d => ({
+              ...d,
+              updatedAt: new Date().toISOString()
+            }));
+            const merged = [...validParsed, ...defaultsToAdd];
+            setCategories(merged);
+            localStorage.setItem('snap_ledger_categories', JSON.stringify(merged));
+          } else {
+            setCategories(validParsed);
+          }
+        } else {
+          // If parsing failed or empty, fallback to defaults ONLY if essentially empty.
+          // But if we had a parsing error on a non-empty string, ideally we wouldn't overwrite?
+          // For now, if 'savedCats' exists but invalid, we might be risky.
+          // But let's assume if it's invalid, it's unsalvageable or empty.
+          setCategories([...DEFAULT_CATEGORIES]);
+          if (!savedCats) { // Only write if it didn't exist or was truly empty? 
+            localStorage.setItem('snap_ledger_categories', JSON.stringify(DEFAULT_CATEGORIES));
+          }
         }
       } else {
-        setCustomCategories([]);
+        // First run or empty: Seed defaults
+        setCategories([...DEFAULT_CATEGORIES]);
+        localStorage.setItem('snap_ledger_categories', JSON.stringify(DEFAULT_CATEGORIES));
       }
     }
   }, [user]); // Re-run when user changes
@@ -217,8 +309,8 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       updatedAt: new Date().toISOString()
     };
 
-    const prevCategories = [...customCategories];
-    setCustomCategories(prev => [...prev, newCategory]);
+    const prevCategories = [...categories];
+    setCategories(prev => [...prev, newCategory]);
 
     if (user) {
       const { error } = await supabase.from('categories').insert({
@@ -232,11 +324,11 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
       if (error) {
         console.error('Error adding category to Supabase:', error);
-        setCustomCategories(prevCategories);
+        setCategories(prevCategories);
         throw new Error(error.message || 'Failed to save category');
       }
     } else {
-      const updated = [...customCategories, newCategory];
+      const updated = [...categories, newCategory];
       localStorage.setItem('snap_ledger_categories', JSON.stringify(updated));
     }
 
@@ -246,8 +338,8 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // UPDATE CATEGORY
   const updateCategory = async (id: string, category: Omit<Category, 'id'>) => {
     const updatedWithTime = { ...category, updatedAt: new Date().toISOString() };
-    const prevCategories = [...customCategories];
-    setCustomCategories(prev => prev.map(c => c.id === id ? { ...updatedWithTime, id } : c));
+    const prevCategories = [...categories];
+    setCategories(prev => prev.map(c => c.id === id ? { ...updatedWithTime, id } : c));
 
     if (user) {
       const { error } = await supabase.from('categories').update({
@@ -259,29 +351,29 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
       if (error) {
         console.error('Error updating category:', error);
-        setCustomCategories(prevCategories);
+        setCategories(prevCategories);
         throw new Error(error.message || 'Failed to update category');
       }
     } else {
-      const updated = customCategories.map(c => c.id === id ? { ...updatedWithTime, id } : c);
+      const updated = categories.map(c => c.id === id ? { ...updatedWithTime, id } : c);
       localStorage.setItem('snap_ledger_categories', JSON.stringify(updated));
     }
   };
 
   // DELETE CATEGORY
   const deleteCategory = async (id: string) => {
-    const prevCategories = [...customCategories];
-    setCustomCategories(prev => prev.filter(c => c.id !== id));
+    const prevCategories = [...categories];
+    setCategories(prev => prev.filter(c => c.id !== id));
 
     if (user) {
       const { error } = await supabase.from('categories').delete().eq('id', id);
       if (error) {
         console.error('Error deleting category:', error);
-        setCustomCategories(prevCategories);
+        setCategories(prevCategories);
         throw new Error(error.message);
       }
     } else {
-      const updated = customCategories.filter(c => c.id !== id);
+      const updated = categories.filter(c => c.id !== id);
       localStorage.setItem('snap_ledger_categories', JSON.stringify(updated));
     }
   };
@@ -290,7 +382,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const importData = async (data: BackupData) => {
     try {
       // 1. Merge Categories (Last Modified Wins)
-      const mergedCats = [...customCategories];
+      const mergedCats = [...categories];
       const incomingCats = data.categories || [];
       const changedCats: Category[] = [];
 
@@ -319,7 +411,6 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
       // Auto-Create Missing Categories from Transactions
       const allCategoryIds = new Set([
-        ...DEFAULT_CATEGORIES.map(c => c.id),
         ...mergedCats.map(c => c.id)
       ]);
 
@@ -395,12 +486,12 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         }
 
         // Update local state to reflect merge immediately
-        setCustomCategories(mergedCats);
+        setCategories(mergedCats);
         setTransactions(mergedTx);
 
       } else {
         // LOCAL SYNC
-        setCustomCategories(mergedCats);
+        setCategories(mergedCats);
         localStorage.setItem('snap_ledger_categories', JSON.stringify(mergedCats));
 
         setTransactions(mergedTx);

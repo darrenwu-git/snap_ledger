@@ -22,8 +22,6 @@ Telemetry is handled by `src/lib/analytics.ts`. Events are stored in Supabase ta
   - **`ai_voice`**: User used Voice Input and the system **auto-saved** (High Confidence).
 - **Properties**:
   - `source`: `'manual'` | `'ai_voice'`
-  - `amount`: Transaction amount (Numeric)
-  - `currency`: 'USD' (Default)
   - `category_id`: Category UUID
   - `category_name`: Readable Category Name
   - `auto_saved`: `true` (Voice specific) | `false` (Manual)

@@ -122,8 +122,6 @@ const Dashboard: React.FC = () => {
 
             trackEvent('transaction_created', {
               source: 'ai_voice',
-              amount: txData.amount,
-              currency: 'USD',
               category_id: categoryId,
               category_name: getCategory(categoryId!)?.name || 'unknown',
               auto_saved: true,

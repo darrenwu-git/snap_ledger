@@ -59,7 +59,11 @@ Create a simple way to track expenses, likely "snap" implies quick/easy entry (m
 - ✅ **Telemetry & Security**:
   - Implemented rate limiting and character limits for Feedback.
   - Added missing telemetry triggers (`app_opened`, `category_created`).
+  - Fixed `category_name` in `transaction_created` telemetry (was logging "unknown" for auto-created categories).
   - Created `SUPABASE_FEEDBACK_SECURITY.sql` migration.
+- ✅ **Fixed AI Auto-Create Categories (Guest Mode)**:
+  - Enabled AI Auto-Category creation for Guest Mode (previously restricted to logged-in users).
+  - Verified via regression testing (47/47 tests passed).
 
 - ✅ **Unit Tests (Telemetry)**:
   - Created `src/lib/analytics.test.ts` to verify `trackEvent` and `submitFeedback`.

@@ -80,7 +80,7 @@ const Dashboard: React.FC = () => {
         audioBlob,
         categories,
         apiKey,
-        { allowAutoCategoryCreation: user ? autoCreateCategories : false }
+        { allowAutoCategoryCreation: autoCreateCategories }
       );
 
       if (result.type === 'transaction') {
@@ -88,7 +88,7 @@ const Dashboard: React.FC = () => {
         let categoryId = txData.categoryId; // Might be undefined/empty if specific logic applied
 
         // Handle Auto-Create Category
-        if (!categoryId && txData.newCategory && user && autoCreateCategories) {
+        if (!categoryId && txData.newCategory && autoCreateCategories) {
           try {
             categoryId = await addCategory({
               name: txData.newCategory.name,
@@ -123,7 +123,7 @@ const Dashboard: React.FC = () => {
             trackEvent('transaction_created', {
               source: 'ai_voice',
               category_id: categoryId,
-              category_name: getCategory(categoryId!)?.name || 'unknown',
+              category_name: getCategory(categoryId!)?.name || txData.newCategory?.name || 'unknown',
               auto_saved: true,
               confidence: txData.confidence
             });

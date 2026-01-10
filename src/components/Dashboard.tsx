@@ -119,6 +119,14 @@ const Dashboard: React.FC = () => {
               note: txData.note || '',
               status: 'completed'
             } as Transaction);
+
+            trackEvent('transaction_created', {
+              source: 'ai_voice',
+              amount: txData.amount,
+              category: getCategory(categoryId!)?.name || 'unknown',
+              auto_saved: true
+            });
+
             setToast({ message: "Saved!", type: 'success' });
           } catch (e: any) {
             setToast({ message: "Save failed: " + e.message, type: 'error' });

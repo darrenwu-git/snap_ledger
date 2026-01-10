@@ -130,6 +130,15 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onClose, initialData,
       setNewCatName('');
       setNewCatIcon('');
       setError(null);
+
+      // Track Event
+      trackEvent('category_created', {
+        name: newCatName,
+        source: 'manual',
+        icon: newCatIcon,
+        type: type
+      });
+
     } catch (e: any) {
       setError(e.message || 'Failed to save category');
     }

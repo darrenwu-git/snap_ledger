@@ -11,13 +11,37 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({ onClose }) => {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
 
+  /* Rate Limiting Logic */
+  const [cooldown, setCooldown] = useState(0);
+
+  React.useEffect(() => {
+    const lastTime = localStorage.getItem('snap_ledger_last_feedback');
+    if (lastTime) {
+      const diff = Date.now() - parseInt(lastTime, 10);
+      if (diff < 60000) {
+        setCooldown(Math.ceil((60000 - diff) / 1000));
+        const timer = setInterval(() => {
+          setCooldown(prev => {
+            if (prev <= 1) {
+              clearInterval(timer);
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+        return () => clearInterval(timer);
+      }
+    }
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!message.trim()) return;
+    if (!message.trim() || cooldown > 0) return;
 
     setStatus('submitting');
     try {
       await submitFeedback(type, message, email);
+      localStorage.setItem('snap_ledger_last_feedback', Date.now().toString());
       setStatus('success');
       setTimeout(onClose, 2000);
     } catch (e) {
@@ -79,24 +103,39 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({ onClose }) => {
           <label style={{ display: 'block', fontSize: '0.8rem', color: 'hsl(var(--color-text-muted))', marginBottom: '6px' }}>
             What's on your mind?
           </label>
-          <textarea
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            placeholder="Tell us what you like or what we should improve..."
-            style={{
-              width: '100%',
-              minHeight: '100px',
-              padding: '12px',
-              borderRadius: '8px',
-              border: '1px solid hsl(var(--color-border))',
-              background: 'hsl(var(--color-bg-subtle))',
-              color: 'hsl(var(--color-text-main))',
-              resize: 'vertical',
-              fontFamily: 'inherit'
-            }}
-            required
-            autoFocus
-          />
+          <div style={{ position: 'relative' }}>
+            <textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Tell us what you like or what we should improve..."
+              maxLength={500}
+              style={{
+                width: '100%',
+                minHeight: '100px',
+                padding: '12px',
+                borderRadius: '8px',
+                border: '1px solid hsl(var(--color-border))',
+                background: 'hsl(var(--color-bg-subtle))',
+                color: 'hsl(var(--color-text-main))',
+                resize: 'vertical',
+                fontFamily: 'inherit'
+              }}
+              required
+              autoFocus
+            />
+            <div style={{
+              position: 'absolute',
+              bottom: '8px',
+              right: '8px',
+              fontSize: '0.7rem',
+              color: message.length >= 500 ? '#ef4444' : 'hsl(var(--color-text-muted))',
+              background: 'rgba(0,0,0,0.1)',
+              padding: '2px 6px',
+              borderRadius: '4px'
+            }}>
+              {message.length}/500
+            </div>
+          </div>
         </div>
 
         {/* Email (Optional) */}
@@ -115,11 +154,17 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({ onClose }) => {
 
         <button
           type="submit"
-          disabled={status === 'submitting' || !message.trim()}
+          disabled={status === 'submitting' || !message.trim() || cooldown > 0}
           className="btn-primary"
-          style={{ marginTop: '8px' }}
+          style={{
+            marginTop: '8px',
+            opacity: (status === 'submitting' || !message.trim() || cooldown > 0) ? 0.6 : 1,
+            cursor: (status === 'submitting' || !message.trim() || cooldown > 0) ? 'not-allowed' : 'pointer'
+          }}
         >
-          {status === 'submitting' ? 'Sending...' : 'Send Feedback'}
+          {cooldown > 0
+            ? `Wait ${cooldown}s`
+            : (status === 'submitting' ? 'Sending...' : 'Send Feedback')}
         </button>
 
         {status === 'error' && (

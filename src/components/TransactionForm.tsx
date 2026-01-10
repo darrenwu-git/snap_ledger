@@ -58,6 +58,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onClose, initialData,
       } else {
         await addTransaction(transactionData);
         // Track Manual Transaction
+        const catName = categories.find(c => c.id === categoryId)?.name || 'unknown';
         trackEvent('transaction_created', {
           source: 'manual',
           category_id: categoryId,

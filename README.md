@@ -1,7 +1,7 @@
 # Snap Ledger
 
 ![Version](https://img.shields.io/badge/version-v0.2.0-blue)
-![License](https://img.shields.io/badge/license-Private-red)
+![License](https://img.shields.io/badge/license-MIT-green)
 ![Status](https://img.shields.io/badge/status-active-success)
 
 Snap Ledger is a **premium, mobile-first expense tracking application** designed to reduce the friction of manual data entry. By leveraging AI-driven voice input and smart auto-categorization, it allows users to capture financial transactions in seconds.
@@ -70,8 +70,9 @@ The application is built with a **Hybrid Persistence** architecture, ensuring us
 
 ## 🤝 Contributing
 
-This is a private personal project. Concepts and patterns are based on the "Mind OS" agentic workflow documentation.
+This is a personal project. Concepts and patterns are based on the "Mind OS" agentic workflow documentation.
 
 ## 📝 License
 
-Private / Proprietary.
+[MIT](LICENSE)
+

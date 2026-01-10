@@ -21,11 +21,13 @@ Telemetry is handled by `src/lib/analytics.ts`. Events are stored in Supabase ta
   - **`manual`**: User clicked "+" and saved via the Transaction Form.
   - **`ai_voice`**: User used Voice Input and the system **auto-saved** (High Confidence).
 - **Properties**:
-  - `source`: `'manual'` | `'ai_voice'` (Crucial for conversion rate analysis)
+  - `source`: `'manual'` | `'ai_voice'`
   - `amount`: Transaction amount (Numeric)
-  - `category`: Category Name (String)
-  - `auto_saved`: `true` (Only present if source is `ai_voice` and auto-saved)
-  - `auto_categorized`: `false` (Manual) / `true` (Voice implied)
+  - `currency`: 'USD' (Default)
+  - `category_id`: Category UUID
+  - `category_name`: Readable Category Name
+  - `auto_saved`: `true` (Voice specific) | `false` (Manual)
+  - `confidence`: Confidence Score (Voice only)
 
 ### 3. `category_created`
 - **Trigger**: Fires when a **new** category is created.

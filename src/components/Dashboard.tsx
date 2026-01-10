@@ -123,8 +123,11 @@ const Dashboard: React.FC = () => {
             trackEvent('transaction_created', {
               source: 'ai_voice',
               amount: txData.amount,
-              category: getCategory(categoryId!)?.name || 'unknown',
-              auto_saved: true
+              currency: 'USD',
+              category_id: categoryId,
+              category_name: getCategory(categoryId!)?.name || 'unknown',
+              auto_saved: true,
+              confidence: txData.confidence
             });
 
             setToast({ message: "Saved!", type: 'success' });

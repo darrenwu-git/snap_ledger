@@ -8,7 +8,7 @@ createRoot(document.getElementById('root')!).render(
     <App />
   </StrictMode>,
 )
-);
+
 
 // Development Helper: Unregister Service Workers to prevent caching issues when switching between Prod/Preview and Dev.
 if (import.meta.env.DEV && 'serviceWorker' in navigator) {

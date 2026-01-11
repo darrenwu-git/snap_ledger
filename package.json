@@ -12,6 +12,7 @@
     "test": "vitest",
     "release:patch": "npm version patch -m \"chore(release): %s\" && git push origin dev --follow-tags",
     "release:minor": "npm version minor -m \"chore(release): %s\" && git push origin dev --follow-tags",
+    "deploy": "bash scripts/deploy.sh",
     "type-check": "tsc -b",
     "prepare": "husky"
   },

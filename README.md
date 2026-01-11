@@ -60,7 +60,14 @@ The application is built with a **Hybrid Persistence** architecture, ensuring us
     ```bash
     npm run dev
     ```
-    Access the app at `http://localhost:5173` (or the port shown in your terminal).
+    Access the app at `http://localhost:4173` (standardized port).
+
+## 🚀 Deployment Strategy
+*   **Production**: The ONLY remote deployment is **`snap-ledger`** (Koyeb).
+*   **Trigger**: Deployment is triggered via `npm run deploy` (which enforces service name).
+*   **Rules**:
+    *   **NEVER** deploy to `snap-ledger-production` or other aliases.
+    *   **ALWAYS** use `localhost:4173` for development.
 
 ## 🛡️ Privacy & Security
 

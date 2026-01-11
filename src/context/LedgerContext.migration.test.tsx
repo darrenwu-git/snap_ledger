@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, cleanup } from '@testing-library/react';
 
 import { LedgerProvider, useLedger } from './LedgerContext';
+import type { Category } from '../types';
 
 
 // Mock Supabase
@@ -82,7 +83,7 @@ describe('LedgerContext Migration Tests', () => {
       const saved = JSON.parse(localStorage.getItem('snap_ledger_categories') || '[]');
       expect(saved.length).toBeGreaterThan(1);
       // Validates it was migrated/saved as UUID
-      expect(saved.find((c: any) => c.id === 'a1e7e720-4e56-42f7-927c-9b788a8d1a1e')).toBeDefined();
+      expect(saved.find((c: Category) => c.id === 'a1e7e720-4e56-42f7-927c-9b788a8d1a1e')).toBeDefined();
     });
 
     it('Respects existing defaults if already present', async () => {
@@ -107,7 +108,7 @@ describe('LedgerContext Migration Tests', () => {
       // The component renders IDs.
       // Let's check local storage directly
       const saved = JSON.parse(localStorage.getItem('snap_ledger_categories') || '[]');
-      const food = saved.find((c: any) => c.id === 'food');
+      const food = saved.find((c: Category) => c.id === 'food');
       expect(food.name).toBe('My Food');
     });
   });
@@ -138,7 +139,7 @@ describe('LedgerContext Migration Tests', () => {
       // payload should be array of categories
       expect(Array.isArray(payload)).toBe(true);
       // Should contain the new UUID for food
-      expect(payload.find((c: any) => c.id === 'a1e7e720-4e56-42f7-927c-9b788a8d1a1e')).toBeDefined();
+      expect(payload.find((c: Category) => c.id === 'a1e7e720-4e56-42f7-927c-9b788a8d1a1e')).toBeDefined();
     });
 
     it('Does NOT seed if defaults exist', async () => {
@@ -167,7 +168,7 @@ describe('LedgerContext Migration Tests', () => {
       });
 
       const payload = mockUpsert.mock.calls[0][0];
-      expect(payload.find((c: any) => c.id === 'food')).toBeUndefined(); // Should skip food
+      expect(payload.find((c: Category) => c.id === 'food')).toBeUndefined(); // Should skip food
     });
   });
 });

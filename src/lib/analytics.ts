@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import pkg from '../../package.json';
 
 const STORAGE_KEY_ANON_ID = 'snap_ledger_anonymous_id';
 
@@ -61,7 +62,7 @@ export const submitFeedback = async (
     contact_email: email,
     metadata: {
       userAgent: navigator.userAgent,
-      version: '0.2.1' // TODO: Import from package.json
+      version: pkg.version
     }
   });
 };

@@ -64,9 +64,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
 
       await importData(data);
       setStatus({ type: 'success', msg: `Import successful! Merged ${data.transactions.length} transactions.` });
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error(e);
-      setStatus({ type: 'error', msg: e.message || "Failed to import file." });
+      const message = e instanceof Error ? e.message : "Failed to import file.";
+      setStatus({ type: 'error', msg: message });
     } finally {
       if (fileInputRef.current) fileInputRef.current.value = '';
     }

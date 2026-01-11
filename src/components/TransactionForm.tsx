@@ -87,8 +87,9 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onClose, initialData,
       try {
         await deleteTransaction(initialData.id);
         onClose();
-      } catch (err: any) {
-        setError(err.message || 'Failed to delete');
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Failed to delete';
+        setError(message);
         setIsSubmitting(false);
         setIsDeleteConfirming(false); // Reset on error
       }
@@ -125,7 +126,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onClose, initialData,
         });
 
         // Track Update
-        const changes: any = {};
+        const changes: Record<string, { old: string; new: string }> = {};
         if (originalCatValues) {
           if (originalCatValues.name !== newCatName) changes.name = { old: originalCatValues.name, new: newCatName };
           if (originalCatValues.icon !== newCatIcon) changes.icon = { old: originalCatValues.icon, new: newCatIcon };
@@ -165,8 +166,9 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onClose, initialData,
       setNewCatIcon('');
       setError(null);
 
-    } catch (e: any) {
-      setError(e.message || 'Failed to save category');
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Failed to save category';
+      setError(message);
     }
   };
 
@@ -182,7 +184,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onClose, initialData,
         setEditingCategoryId(null);
         setOriginalCatValues(null);
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error(e);
       setError('Failed to delete category');
     }

@@ -130,8 +130,9 @@ const Dashboard: React.FC = () => {
             });
 
             setToast({ message: "Saved!", type: 'success' });
-          } catch (e: any) {
-            setToast({ message: "Save failed: " + e.message, type: 'error' });
+          } catch (e: unknown) {
+            const message = e instanceof Error ? e.message : 'Unknown error';
+            setToast({ message: "Save failed: " + message, type: 'error' });
           }
         } else {
           // Low confidence or missing info -> Open Edit Modal
@@ -189,8 +190,9 @@ const Dashboard: React.FC = () => {
             status: 'draft'
           } as Transaction);
           setToast({ message: "Saved to Pending Review", type: 'info' });
-        } catch (e: any) {
-          setToast({ message: "Failed to save draft: " + e.message, type: 'error' });
+        } catch (e: unknown) {
+          const message = e instanceof Error ? e.message : 'Unknown error';
+          setToast({ message: "Failed to save draft: " + message, type: 'error' });
         }
       }
     }

@@ -5,6 +5,7 @@ import React from 'react';
 import { LedgerProvider, useLedger } from './LedgerContext';
 import testBackup from '../tests/fixtures/test_backup.json';
 import { supabase } from '../lib/supabase';
+import type { BackupData } from '../types';
 
 // Mock Supabase
 // We need to verify calls to supabase, so we'll store the mock functions
@@ -76,7 +77,7 @@ Object.defineProperty(globalThis, 'crypto', {
   }
 });
 
-const ResultDisplay = ({ importPayload }: { importPayload?: any }) => {
+const ResultDisplay = ({ importPayload }: { importPayload?: BackupData }) => {
   const { transactions, categories, importData, addTransaction, updateTransaction, deleteTransaction } = useLedger();
 
   return (
@@ -85,7 +86,7 @@ const ResultDisplay = ({ importPayload }: { importPayload?: any }) => {
       <div data-testid="cat-count">{categories.length}</div>
       <button
         data-testid="btn-import"
-        onClick={() => importData(importPayload || testBackup).catch(e => console.error(e))}
+        onClick={() => importData(importPayload || (testBackup as unknown as BackupData)).catch(e => console.error(e))}
       >
         Import
       </button>
@@ -533,6 +534,7 @@ describe('LedgerContext Logic Tests', () => {
           addCategory({ name: 'FoundIt', icon: 'F', type: 'expense' }).then(id => {
             setCreatedId(id);
           });
+          // eslint-disable-next-line react-hooks/exhaustive-deps
         }, []);
 
         // Reactive check

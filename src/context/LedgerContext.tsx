@@ -20,6 +20,7 @@ interface LedgerContextType {
 const LedgerContext = createContext<LedgerContextType | undefined>(undefined);
 
 // Helper to map DB row to Transaction
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mapFromDb = (row: any): Transaction => ({
   id: row.id,
   amount: Number(row.amount),
@@ -79,7 +80,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           let loadedCategories: Category[] = [];
 
           if (catData) {
-            loadedCategories = catData.map((c: any) => ({
+            loadedCategories = catData.map((c: { id: string; name: string; icon: string; type: Category['type']; updated_at: string }) => ({
               id: c.id,
               name: c.name,
               icon: c.icon,
@@ -128,19 +129,20 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       if (savedTrans) {
         try {
           const parsed = JSON.parse(savedTrans);
-          const migrated = parsed.map((t: any) => ({
+          const migrated = parsed.map((t: Transaction) => ({
             ...t,
             // Migrate Category ID if needed
             categoryId: LEGACY_CATEGORY_ID_MAP[t.categoryId] || t.categoryId,
             status: t.status || 'completed'
           }));
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           setTransactions(migrated);
 
           // Save migrated transactions back if there were changes (implied by just doing it)
           // To be safe/clean, we could check for changes, but writing back is cheap here.
           // Wait, if we write back, we should stringify.
           // Let's just do it to ensure consistency.
-          const hasLegacyIds = parsed.some((t: any) => LEGACY_CATEGORY_ID_MAP[t.categoryId]);
+          const hasLegacyIds = parsed.some((t: Transaction) => LEGACY_CATEGORY_ID_MAP[t.categoryId]);
           if (hasLegacyIds) {
             localStorage.setItem('snap_ledger_transactions', JSON.stringify(migrated));
           }
@@ -154,7 +156,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
       const savedCats = localStorage.getItem('snap_ledger_categories');
       if (savedCats) {
-        let parsed: any[] = [];
+        let parsed: Category[] = [];
 
         try {
           const raw = JSON.parse(savedCats);
@@ -167,10 +169,10 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
         if (parsed.length > 0) {
           // Filter out malformed entries to avoid crashes
-          const validParsed = parsed.filter((c: any) => c && typeof c.id === 'string');
+          const validParsed = parsed.filter((c: Category) => c && typeof c.id === 'string');
 
           // MIGRATION: Check if we need to merge defaults
-          const existingIds = new Set(validParsed.map((c: any) => c.id));
+          const existingIds = new Set(validParsed.map((c: Category) => c.id));
           const missingDefaults = DEFAULT_CATEGORIES.filter(d => !existingIds.has(d.id));
 
           if (missingDefaults.length > 0) {
@@ -515,6 +517,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useLedger = () => {
   const context = useContext(LedgerContext);
   if (context === undefined) {

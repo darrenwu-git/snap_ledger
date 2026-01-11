@@ -35,7 +35,7 @@ vi.mock('../context/LedgerContext', () => ({
 
 // Mock TransactionForm (since it's used in Edit Modal)
 vi.mock('./TransactionForm', () => ({
-  default: ({ onClose, initialData }: any) => (
+  default: ({ onClose, initialData }: { onClose: () => void; initialData?: { id: string } }) => (
     <div data-testid="mock-tx-form">
       Mock Transaction Form
       {initialData && <div data-testid="initial-data-id">{initialData.id}</div>}

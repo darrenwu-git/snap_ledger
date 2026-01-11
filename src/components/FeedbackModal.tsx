@@ -79,7 +79,7 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({ onClose }) => {
             <button
               key={t.id}
               type="button"
-              onClick={() => setType(t.id as any)}
+              onClick={() => setType(t.id as 'bug' | 'feature' | 'like' | 'other')}
               style={{
                 flex: 1,
                 padding: '8px',

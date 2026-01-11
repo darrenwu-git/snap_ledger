@@ -5,7 +5,7 @@ import { trackEvent, submitFeedback, getAnonymousId } from './analytics';
 
 const { mockInsert, mockFrom, mockGetUser } = vi.hoisted(() => {
   const mockInsert = vi.fn(() => Promise.resolve({ data: null, error: null }));
-  const mockFrom = vi.fn((_table: string) => ({
+  const mockFrom = vi.fn(() => ({
     insert: mockInsert
   }));
   const mockGetUser = vi.fn(() => Promise.resolve({ data: { user: null }, error: null }));
@@ -115,7 +115,7 @@ describe('Analytics Library', () => {
         contact_email: 'test@example.com',
         user_id: 'u999',
         metadata: expect.objectContaining({
-          version: '0.1.0'
+          version: '0.2.2'
         })
       }));
     });

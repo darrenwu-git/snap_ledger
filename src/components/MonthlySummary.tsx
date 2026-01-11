@@ -413,7 +413,7 @@ const MonthlySummary: React.FC<MonthlySummaryProps> = ({
                 ))}
               </Pie>
               <Tooltip
-                formatter={(value: any) => `$${value.toLocaleString()}`}
+                formatter={(value: number | string | undefined) => value ? `$${value.toLocaleString()}` : ''}
                 contentStyle={{
                   borderRadius: '12px',
                   border: 'none',

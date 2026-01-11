@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import { parseVoiceInput } from './VoiceParser';
 import type { Category } from '../types';
 
@@ -30,7 +30,7 @@ describe('VoiceParser', () => {
   });
 
   it('should handle transcription API failure', async () => {
-    (globalThis.fetch as any)
+    (globalThis.fetch as Mock)
       .mockResolvedValueOnce({
         ok: false,
         text: () => Promise.resolve('Transcription failed'),
@@ -46,7 +46,7 @@ describe('VoiceParser', () => {
   });
 
   it('should handle empty transcription', async () => {
-    (globalThis.fetch as any)
+    (globalThis.fetch as Mock)
       .mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve({ text: '' })
@@ -62,7 +62,7 @@ describe('VoiceParser', () => {
 
   it('should successfully parse a standard expense transaction', async () => {
     // Mock Transcription
-    (globalThis.fetch as any)
+    (globalThis.fetch as Mock)
       .mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve({ text: 'Spent 500 on dinner' })
@@ -79,7 +79,7 @@ describe('VoiceParser', () => {
       confidence: 1.0
     };
 
-    (globalThis.fetch as any)
+    (globalThis.fetch as Mock)
       .mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve({
@@ -105,7 +105,7 @@ describe('VoiceParser', () => {
 
   it('should successfully parse a standard income transaction', async () => {
     // Mock Transcription
-    (globalThis.fetch as any)
+    (globalThis.fetch as Mock)
       .mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve({ text: 'Received 50000 salary' })
@@ -122,7 +122,7 @@ describe('VoiceParser', () => {
       confidence: 1.0
     };
 
-    (globalThis.fetch as any)
+    (globalThis.fetch as Mock)
       .mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve({
@@ -148,7 +148,7 @@ describe('VoiceParser', () => {
 
   it('should handle auto-category creation when enabled', async () => {
     // Mock Transcription
-    (globalThis.fetch as any)
+    (globalThis.fetch as Mock)
       .mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve({ text: 'Spent 100 on gaming' })
@@ -170,7 +170,7 @@ describe('VoiceParser', () => {
       }
     };
 
-    (globalThis.fetch as any)
+    (globalThis.fetch as Mock)
       .mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve({
@@ -210,16 +210,16 @@ describe('VoiceParser', () => {
       confidence: 0.5
     };
 
-    let capturedBody: any;
+    let capturedBody: { messages: { content: string }[] } | undefined;
 
     // 1. Transcription Mock
-    (globalThis.fetch as any).mockResolvedValueOnce({
+    (globalThis.fetch as Mock).mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve({ text: 'Spent 100 on unknown' })
     });
 
     // 2. Chat Mock
-    (globalThis.fetch as any).mockImplementationOnce(async (_url: string, options: any) => {
+    (globalThis.fetch as Mock).mockImplementationOnce(async (_url: string, options: { body: string }) => {
       capturedBody = JSON.parse(options.body);
       return {
         ok: true,
@@ -233,13 +233,13 @@ describe('VoiceParser', () => {
 
     // Verify
     expect(capturedBody).toBeDefined();
-    const systemPrompt = capturedBody.messages[0].content;
+    const systemPrompt = capturedBody!.messages[0].content;
     expect(systemPrompt).toContain('Do NOT suggest new categories');
   });
 
   it('should handle non-accounting intent', async () => {
     // Mock Transcription
-    (globalThis.fetch as any)
+    (globalThis.fetch as Mock)
       .mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve({ text: 'Hello world' })
@@ -251,7 +251,7 @@ describe('VoiceParser', () => {
       message: "Greeting detected"
     };
 
-    (globalThis.fetch as any)
+    (globalThis.fetch as Mock)
       .mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve({
@@ -269,14 +269,14 @@ describe('VoiceParser', () => {
 
   it('should handle chat API failure', async () => {
     // Mock Transcription
-    (globalThis.fetch as any)
+    (globalThis.fetch as Mock)
       .mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve({ text: 'Spend 100' })
       });
 
     // Mock Chat Failure
-    (globalThis.fetch as any)
+    (globalThis.fetch as Mock)
       .mockResolvedValueOnce({
         ok: false,
         text: () => Promise.resolve('OOM'),

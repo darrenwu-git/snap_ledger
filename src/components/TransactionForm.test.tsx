@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import { render, screen, fireEvent, waitFor, cleanup, act } from '@testing-library/react';
 import TransactionForm from './TransactionForm';
 // We don't need LedgerContext import as we mock the hook directly
@@ -23,9 +23,9 @@ const mockCategories = [
 
 // We can mock the hook directly since it's exported
 vi.mock('../context/LedgerContext', async (importOriginal) => {
-    const actual = await importOriginal();
+    const actual = await importOriginal<typeof import('../context/LedgerContext')>();
     return {
-        ...actual as any,
+        ...actual,
         useLedger: () => ({
             addTransaction: mockAddTransaction,
             updateTransaction: mockUpdateTransaction,
@@ -330,8 +330,8 @@ describe('TransactionForm Component', () => {
 
             // Telemetry Check
             const { trackEvent } = await import('../lib/analytics');
-            const calls = (trackEvent as any).mock.calls;
-            const updateCall = calls.find((c: any) => c[0] === 'category_updated');
+            const calls = (trackEvent as Mock).mock.calls;
+            const updateCall = calls.find((c: unknown[]) => c[0] === 'category_updated');
 
             expect(updateCall).toBeDefined();
             expect(updateCall[1]).toMatchObject({

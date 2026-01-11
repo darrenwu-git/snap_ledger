@@ -334,7 +334,7 @@ describe('TransactionForm Component', () => {
             const updateCall = calls.find((c: unknown[]) => c[0] === 'category_updated');
 
             expect(updateCall).toBeDefined();
-            expect(updateCall[1]).toMatchObject({
+            expect(updateCall![1]).toMatchObject({
                 category_id: 'new-cat-id',
                 changes: {
                     icon: { old: '🍔', new: '🚗' }

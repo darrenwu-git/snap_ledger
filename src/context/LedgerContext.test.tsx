@@ -196,7 +196,9 @@ describe('LedgerContext Logic Tests', () => {
             updatedAt: '2026-01-02T12:00:00Z' // Newer than local
           }
         ],
-        categories: []
+        categories: [],
+        version: 1,
+        exportedAt: '2026-01-01T00:00:00Z'
       };
 
       render(
@@ -239,10 +241,12 @@ describe('LedgerContext Logic Tests', () => {
       // Backup has Existing (old value) AND New
       const backupPayload = {
         transactions: [
-          { id: 'existing-1', amount: 999, categoryId: 'food', date: '2026-01-01', note: 'Backup Old', type: 'expense' },
-          { id: 'new-1', amount: 200, categoryId: 'food', date: '2026-01-02', note: 'New Item', type: 'expense' }
+          { id: 'existing-1', amount: 999, categoryId: 'food', date: '2026-01-01', note: 'Backup Old', type: 'expense' as const, status: 'completed' as const },
+          { id: 'new-1', amount: 200, categoryId: 'food', date: '2026-01-02', note: 'New Item', type: 'expense' as const, status: 'completed' as const }
         ],
-        categories: []
+        categories: [],
+        version: 1,
+        exportedAt: '2026-01-01T00:00:00Z'
       };
 
       render(
@@ -271,9 +275,11 @@ describe('LedgerContext Logic Tests', () => {
       // Backup has a transaction using 'gym' category, which doesn't exist locally
       const backupPayload = {
         transactions: [
-          { id: 'tx-gym', amount: 50, categoryId: 'gym', date: '2026-01-01', note: 'Gym Membership', type: 'expense' }
+          { id: 'tx-gym', amount: 50, categoryId: 'gym', date: '2026-01-01', note: 'Gym Membership', type: 'expense' as const, status: 'completed' as const }
         ],
-        categories: [] // Empty categories in backup
+        categories: [], // Empty categories in backup
+        version: 1,
+        exportedAt: '2026-01-01T00:00:00Z'
       };
 
       render(
@@ -448,11 +454,13 @@ describe('LedgerContext Logic Tests', () => {
 
       const backupPayload = {
         transactions: [
-          { id: 'import-tx-1', amount: 50, categoryId: 'food', date: '2026-01-01', note: 'Imported', type: 'expense', updatedAt: '2026-01-02T12:00:00Z' }
+          { id: 'import-tx-1', amount: 50, categoryId: 'food', date: '2026-01-01', note: 'Imported', type: 'expense' as const, status: 'completed' as const, updatedAt: '2026-01-02T12:00:00Z' }
         ],
         categories: [
-          { id: 'import-cat-1', name: 'New Cat', icon: '🐱', type: 'expense', updatedAt: '2026-01-02T12:00:00Z' }
-        ]
+          { id: 'import-cat-1', name: 'New Cat', icon: '🐱', type: 'expense' as const, updatedAt: '2026-01-02T12:00:00Z' }
+        ],
+        version: 1,
+        exportedAt: '2026-01-02T12:00:00Z'
       };
 
       render(
@@ -505,7 +513,7 @@ describe('LedgerContext Logic Tests', () => {
     it('Import Data handles errors gracefully', async () => {
       render(
         <LedgerProvider>
-          <ResultDisplay importPayload={{ transactions: [], categories: [] }} />
+          <ResultDisplay importPayload={{ transactions: [], categories: [], version: 1, exportedAt: '2026-01-01T00:00:00Z' }} />
         </LedgerProvider>
       );
 

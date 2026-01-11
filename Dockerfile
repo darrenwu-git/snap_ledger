@@ -1,23 +1,21 @@
-FROM node:20-alpine
-
+# Stage 1: Build
+FROM node:20-alpine AS builder
 WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build
 
-# Copy package files
-COPY package.json ./
-
-# Install ONLY production dependencies
-# Network timeout increased for reliability
+# Stage 2: Serve
+FROM node:20-alpine
+WORKDIR /app
+COPY package*.json ./
 RUN npm install --omit=dev --foreground-scripts
-
-# Copy application code
 COPY server.js ./
-COPY dist ./dist
+COPY --from=builder /app/dist ./dist
 
-# Environmental variables
 ENV PORT=8000
 ENV NODE_ENV=production
-
 EXPOSE 8000
 
-# Use shell form to ensure PORT environment variable is strictly honored as per guide
 CMD sh -c "node server.js"

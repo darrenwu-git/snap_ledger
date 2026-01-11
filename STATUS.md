@@ -136,9 +136,24 @@ Create a simple way to track expenses, likely "snap" implies quick/easy entry (m
   - Added Auto-Repair for missing categories during import.
   - Updated User Menu to be universal (Guest/User).
 
+## 🌍 Environment & Infrastructure
+
+> [!IMPORTANT]
+> **Strict Separation Rule**: Development and Production environments are isolated.
+
+**Development Environment (Local)**
+- **Command**: `npm run dev` (Defaults to Port **4173**).
+- **Database**: `snap ledger` (Dev Project).
+- **Configuration**: Uses `.env`.
+- **Port Strategy**: Standardized on **4173** for local development.
+
+**Production Environment (Live)**
+- **Command**: `npm run build && npm run preview` (Simulates Prod).
+- **Database**: `snap ledger production` (Prod Project).
+- **Configuration**: Uses `.env.production` (loaded by `vite build`).
+- **URL**: `https://snap-ledger.ai-builders.space`
+
 ## Deployment & Workflow
-- **Production URL**: `https://snap-ledger-production.koyeb.app`
-- **Development Port**: `4173`
 - **Branch Strategy**: `dev` for work, merge to `main` for deploy.
 
 - **Release Commands**:

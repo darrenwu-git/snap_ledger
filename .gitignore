@@ -28,3 +28,4 @@ coverage/
 
 .agent/
 STATUS.md
+package-lock.json

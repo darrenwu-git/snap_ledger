@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useLedger } from '../context/LedgerContext';
+import { parseLocalDate } from '../utils/dateHelpers';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
 interface MonthlySummaryProps {
@@ -54,7 +55,7 @@ const MonthlySummary: React.FC<MonthlySummaryProps> = ({
     const month = currentDate.getMonth();
 
     return transactions.filter(t => {
-      const tDate = new Date(t.date);
+      const tDate = parseLocalDate(t.date);
       if (viewMode === 'year') {
         return tDate.getFullYear() === year;
       } else {

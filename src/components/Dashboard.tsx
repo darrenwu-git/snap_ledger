@@ -10,6 +10,7 @@ import { LoginButton } from './LoginButton';
 import SettingsModal from './SettingsModal';
 import FeedbackModal from './FeedbackModal';
 import type { Transaction } from '../types';
+import { parseLocalDate } from '../utils/dateHelpers';
 
 import { trackEvent } from '../lib/analytics';
 
@@ -44,7 +45,7 @@ const Dashboard: React.FC = () => {
   // Filter and Group Transactions
   const filteredTransactions = React.useMemo(() => {
     return transactions.filter(t => {
-      const tDate = new Date(t.date);
+      const tDate = parseLocalDate(t.date);
       const isSameYear = tDate.getFullYear() === currentDate.getFullYear();
       const matchesDate = viewMode === 'year'
         ? isSameYear
@@ -54,7 +55,7 @@ const Dashboard: React.FC = () => {
       if (filterCategoryId && t.categoryId !== filterCategoryId) return false;
 
       return true;
-    }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    }).sort((a, b) => parseLocalDate(b.date).getTime() - parseLocalDate(a.date).getTime());
   }, [transactions, currentDate, viewMode, filterCategoryId]);
 
   const groupedTransactions = React.useMemo(() => {
@@ -320,7 +321,9 @@ const Dashboard: React.FC = () => {
 
       <div style={{ marginTop: '24px' }}>
         <div className="flex-between" style={{ marginBottom: '16px', alignItems: 'center' }}>
-          <h3>{viewMode === 'year' ? `Transactions in ${currentDate.getFullYear()}` : 'Recent Transactions'}</h3>
+          <h3>{viewMode === 'year'
+            ? `Transactions in ${currentDate.getFullYear()}`
+            : `Transactions in ${currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}`}</h3>
 
           {filterCategoryId && (
             <button

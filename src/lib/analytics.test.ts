@@ -115,7 +115,7 @@ describe('Analytics Library', () => {
         contact_email: 'test@example.com',
         user_id: 'u999',
         metadata: expect.objectContaining({
-          version: '0.2.7'
+          version: '0.2.8'
         })
       }));
     });

@@ -52,7 +52,9 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           .from('transactions')
           .select('*')
           .order('date', { ascending: false });
-        
+
+
+
         if (transError) {
           console.error('Error fetching transactions:', transError);
         } else if (transData) {
